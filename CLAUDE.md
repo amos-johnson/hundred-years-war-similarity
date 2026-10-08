@@ -18,9 +18,18 @@ This is a simplified rebuild of `~/Documents/GitHub/hundred-years-war-network` (
 
 ## Code and data
 - `src/wiki.py`: API calls, cached as JSON in `data/raw/` (gitignored). `src/similarity.py`: the measures.
-- `data/processed/`: Parquet tables (committed) and CSV copies without the text column (gitignored, written by the notebooks).
+- `data/processed/`: Parquet tables (committed) and CSV copies without the text column (gitignored, written by the notebooks):
+  - `articles` (one row per article: title, pageid, is_seed, shortdesc, first_paragraph, word_count, n_links_out, out_degree, pct_out_degree, in_degree, links_to_seed, text)
+  - `links` (source, target, target_in_network, from_template)
+  - `pairs` (a, b, outlink, inlink, milne_witten; 310,866 rows) and `seed_similarity` (each article's three scores and ranks vs the seed)
+- `data/raw/`: `links/`, `articles/`, `backlinks/` (copied from the archive repo; collected 29 Sep – 6 Oct 2026), `written_links/` (8 Oct 2026), `_article_count.json` (W = 7,248,637).
+
+## Findings so far
+- **Step 1:** 789 nodes, 48,006 network links, density 0.077, reciprocity 0.70, one connected component; 66% of 1-hop articles link back to the seed. Templates add 58% of all links and 69% of network links (57% of the seed's).
+- **Step 2:** in-link top 10 for the seed = the war's core (Edward III, Charles VII, Henry V, Poitiers, Crécy, Agincourt, Black Death); out-link top 10 = navbox groups (war phases, 1429 Loire campaign). Out-link vs in-link Spearman 0.42; the rank average correlates 0.83 / 0.84 with each. Crécy–seed: in-link 0.755 (|A| = 518, |B| = 2,752, shared 266). Kingdom of England ranks 133rd, Norfolk Record Office 755th.
 
 ## Gotchas
+- **Data collected on different days:** link lists (29 Sep) and written links (8 Oct) can disagree when a page changed in between; get_written_links matches against the cached link titles first, which absorbs page renames.
 - **Pagination:** 500 results per response plus a `continue` token; a page can appear in two batches, so `_query_all` merges by title.
 - **Rate limits:** HTTP 429 → `_api_get` waits and retries, as for `maxlag`.
 - **Citation identifiers** arrive already resolved (e.g. *Digital object identifier*), so they're recognized by the redirect's original name.
