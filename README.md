@@ -8,7 +8,7 @@ Which Wikipedia articles are most closely related to the [Hundred Years' War](ht
 
 1. **Collect and explore** (`notebooks/01_collect_and_explore.ipynb`). The seed article and every article it links to (789 articles), their links, text and short descriptions, from the Wikipedia API. Each link is flagged if it comes from a template (navbox, sidebar) rather than the article's own text.
 2. **Milne–Witten similarity** (`notebooks/02_milne_witten.ipynb`). Every pair of articles is compared by the pages they link to (out-links) and the pages that link to them (in-links, from all of Wikipedia). The two are combined by averaging their percentile ranks, because they're on very different scales.
-3. **Clustering** (planned). Unsupervised clustering of the articles, using the similarity scores and article metadata.
+3. **Clustering** (`notebooks/03_clustering.ipynb`). Louvain communities on a graph that joins each article to its 10 most similar articles. The result is 12 stable themes (the war's phases, Joan of Arc, the two monarchies, Burgundy, the Middle Ages and more), profiled by how close each is to the war and how much of it comes from templates.
 
 ## Setup
 

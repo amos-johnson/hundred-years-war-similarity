@@ -7,7 +7,8 @@ columns, values from 0 (nothing in common) to 1, and 1 on the diagonal:
     inlink_similarity(backlinks, W, titles)   -> similarity of the articles' in-links
     rank_average(*measures)                   -> average of the measures' percentile ranks
 
-to_pairs(measures) turns these tables into one row per article pair.
+to_pairs(measures) turns these tables into one row per article pair, and
+from_pairs(pairs, column) turns one column back into a table.
 
 The measures use one trick: a sparse 0/1 matrix X with one row per article
 and one column per linked (or linking) page. X @ X.T then counts, for every
@@ -112,3 +113,13 @@ def to_pairs(measures):
     for name, matrix in measures.items():
         table[name] = matrix.loc[titles, titles].to_numpy()[i, j]
     return table
+
+
+def from_pairs(pairs, column):
+    """The inverse of to_pairs: one measure's column back to a square DataFrame."""
+    titles = sorted(set(pairs["a"]) | set(pairs["b"]))
+    row_of = {t: i for i, t in enumerate(titles)}
+    i, j = pairs["a"].map(row_of).to_numpy(), pairs["b"].map(row_of).to_numpy()
+    values = np.eye(len(titles))
+    values[i, j] = values[j, i] = pairs[column].to_numpy()
+    return pd.DataFrame(values, index=titles, columns=titles)

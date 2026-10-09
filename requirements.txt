@@ -6,5 +6,6 @@ scipy
 matplotlib
 seaborn
 networkx
+scikit-learn
 tqdm
 ipykernel
