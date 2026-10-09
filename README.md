@@ -11,7 +11,7 @@ Which Wikipedia articles are most closely related to the [Hundred Years' War](ht
 3. **Clustering** (`notebooks/03_clustering.ipynb`). Louvain communities on a graph that joins each article to its 10 most similar articles. The result is 12 stable themes (the war's phases, Joan of Arc, the two monarchies, Burgundy, the Middle Ages and more), profiled by how close each is to the war and how much of it comes from templates.
 4. **Interactive graph** (`notebooks/04_graph.ipynb` → `docs/index.html`). A radial view puts the war at the center, gives each theme a wedge, and places each article by its closeness to the war; a network view pulls similar articles together. A toggle animates between them, and clicking an article shows its details and its 10 most similar articles.
 
-**To view the graph:** open `docs/index.html` in a browser (double-click it), or, from the repo folder, run `python -m http.server -d docs` and go to http://localhost:8000.
+**[Open the interactive graph](https://amos-johnson.github.io/hundred-years-war-similarity/)**, or locally: open `docs/index.html` in a browser (double-click it), or, from the repo folder, run `python -m http.server -d docs` and go to http://localhost:8000.
 
 ## Setup
 

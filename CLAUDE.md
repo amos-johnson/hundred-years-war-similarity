@@ -42,5 +42,5 @@ This is a simplified rebuild of `~/Documents/GitHub/hundred-years-war-network` (
 
 ## Environment
 - Python 3.14 in `.venv`; `.venv/bin/pip install -r requirements.txt`.
-- Local only for now (planned for github.com/amos-johnson).
+- Public at github.com/amos-johnson/hundred-years-war-similarity; GitHub Pages serves `docs/` at https://amos-johnson.github.io/hundred-years-war-similarity/. Commits use the GitHub noreply email (repo-local `user.email`), never the personal one.
 - Commits end with the Co-Authored-By line that Claude Code specifies.
