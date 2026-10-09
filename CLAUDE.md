@@ -8,7 +8,7 @@ This is a simplified rebuild of `~/Documents/GitHub/hundred-years-war-network` (
 1. **Collect and explore** (`notebooks/01_collect_and_explore.ipynb`).
 2. **Milne–Witten similarity** (`notebooks/02_milne_witten.ipynb`).
 3. **Clustering** (`notebooks/03_clustering.ipynb`): unsupervised, on Milne–Witten similarity; metadata only describes the clusters. Evaluated by silhouette, stability and inspection. No hand labels: labels of relatedness to the seed would make a classifier seed-specific, and every article was selected by the seed's links (selection bias).
-4. **Graph and UI:** an interactive graph of the clusters (later).
+4. **Graph and UI** (`notebooks/04_graph.ipynb` → `docs/index.html`): static page, radial view (angle = theme, radius = closeness) and network view, with an animated toggle.
 
 ## Decisions
 - **Nodes:** the seed (*Hundred Years' War*) plus every article it links to, excluding disambiguation pages: 789 articles.
@@ -16,9 +16,11 @@ This is a simplified rebuild of `~/Documents/GitHub/hundred-years-war-network` (
 - **`from_template`** in the links table: True when a link isn't in the article's own source text (wikitext), i.e. a navbox, sidebar or other template added it. Kept as a signal for clustering, not analyzed further. (In the exploratory version, navbox links made up 65% of network links and inflated every link measure.)
 - **Milne & Witten (2008):** out-link measure (cosine of link vectors weighted log(N / df), with df counted over our 789 articles instead of all of Wikipedia) and in-link measure (1 − Normalized Google Distance on in-links from all of Wikipedia; with only the network's in-links the formula breaks). Combined as the **average of percentile ranks**, because in-link values (median ~0.49) are ~100× larger than out-link values.
 - **Clustering (Step 3):** Louvain communities (networkx) on a kNN graph (K = 10, edges weighted by Milne–Witten), seed excluded (788 articles). Metadata and `from_template` only *profile* clusters: size would group by length, and templates would rebuild navboxes. Not hierarchical: average linkage gives one cluster of 765 yet a higher silhouette. Cluster names are keyed by a member article (`NAMES` in the notebook), because Louvain's numbering can shift.
+- **Graph page (Step 4):** positions computed in Python (`src/layout.py`), the browser only animates between them. Radial: wedges sized by cluster and ordered by between-cluster similarity (optimal leaf ordering); radius = 0.08 + 0.92·√(rank / 788), so equal-area rings hold equal numbers of articles. Color = closeness (one blue ramp), not cluster: 12 clusters exceed the 8 distinguishable hues, so themes are shown by position, labels and legend highlighting. Data in `docs/data.js` (`window.GRAPH`), not JSON, so the page works from `file://`. d3 7.9.0 from cdnjs. `docs/` is ready for GitHub Pages. Page features: multiple-choice dropdown filters (theme, closeness, seed's link, links back, length, bridge; OR within a filter, AND across), a table of the 10 most related articles (to the selection, or to the seed by default; filters don't apply), seed searchable as "Hundred Years' War (Seed)", and Reset clears zoom, filters, selection and search.
 
 ## Code and data
-- `src/wiki.py`: API calls, cached as JSON in `data/raw/` (gitignored). `src/similarity.py`: the measures (`to_pairs` / `from_pairs`). `src/clustering.py`: `neighbors`, `knn_graph`, `louvain`, `stability`, `outside_share`.
+- `src/wiki.py`: API calls, cached as JSON in `data/raw/` (gitignored). `src/similarity.py`: the measures (`to_pairs` / `from_pairs`). `src/clustering.py`: `neighbors`, `knn_graph`, `louvain`, `stability`, `outside_share`. `src/layout.py`: `network_layout`, `cluster_order`, `radial_layout`.
+- `docs/`: `index.html` (the page, d3) and `data.js` (written by notebook 04; regenerate after changing clusters).
 - `data/processed/`: Parquet tables (committed) and CSV copies without the text column (gitignored, written by the notebooks):
   - `articles` (one row per article: title, pageid, is_seed, shortdesc, first_paragraph, word_count, n_links_out, out_degree, pct_out_degree, in_degree, links_to_seed, text)
   - `links` (source, target, target_in_network, from_template)

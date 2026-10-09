@@ -1,0 +1,663 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hundred Years' War Themes</title>
+<meta name="description" content="The Wikipedia articles linked from the Hundred Years' War, grouped into themes by Milne–Witten link similarity and placed by their closeness to the war.">
+<style>
+  :root {
+    --surface: #fcfcfb;
+    --surface-2: #f3f2ef;
+    --border: #e4e3df;
+    --text: #0b0b0b;
+    --text-2: #52514e;
+    --muted: #8a8984;
+    --edge: #b9b8b1;
+    --highlight: #0b0b0b;
+    --accent: #2a78d6;
+    --ramp-close: #0d366b;
+    --ramp-mid: #3987e5;
+    --ramp-far: #86b6ef;
+    --shadow: 0 8px 24px rgb(0 0 0 / 0.12);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --surface: #1a1a19;
+      --surface-2: #242423;
+      --border: #383835;
+      --text: #ffffff;
+      --text-2: #c3c2b7;
+      --muted: #8f8e86;
+      --edge: #4d4c48;
+      --highlight: #ffffff;
+      --accent: #3987e5;
+      --ramp-close: #cde2fb;
+      --ramp-mid: #5598e7;
+      --ramp-far: #184f95;
+      --shadow: 0 8px 24px rgb(0 0 0 / 0.5);
+    }
+  }
+  :root[data-theme="dark"] {
+    --surface: #1a1a19;
+    --surface-2: #242423;
+    --border: #383835;
+    --text: #ffffff;
+    --text-2: #c3c2b7;
+    --muted: #8f8e86;
+    --edge: #4d4c48;
+    --highlight: #ffffff;
+    --accent: #3987e5;
+    --ramp-close: #cde2fb;
+    --ramp-mid: #5598e7;
+    --ramp-far: #184f95;
+    --shadow: 0 8px 24px rgb(0 0 0 / 0.5);
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--surface);
+    color: var(--text);
+    font: 14px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  header, main, .below, footer { max-width: 1280px; margin: 0 auto; padding: 0 16px; }
+  header { padding-top: 20px; }
+  h1 { font-size: 22px; margin: 0 0 4px; letter-spacing: -0.01em; }
+  .lede { margin: 0 0 14px; color: var(--text-2); max-width: 70ch; }
+
+  .controls, .filters { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 10px; }
+  .filters { margin-bottom: 14px; }
+  .toggle { display: inline-flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+  .toggle button {
+    border: 0; background: transparent; color: var(--text-2); padding: 6px 14px; font: inherit; cursor: pointer;
+  }
+  .toggle button[aria-pressed="true"] { background: var(--text); color: var(--surface); }
+  input[type="search"] {
+    font: inherit; color: var(--text); background: var(--surface); min-width: 0; flex: 1 1 220px; max-width: 340px;
+    border: 1px solid var(--border); border-radius: 8px; padding: 6px 10px;
+  }
+  .ghost {
+    font: inherit; color: var(--text-2); background: transparent; border: 1px solid var(--border);
+    border-radius: 8px; padding: 6px 12px; cursor: pointer;
+  }
+  .ghost:hover { color: var(--text); }
+
+  /* Multiple-choice dropdown filters */
+  .dd { position: relative; }
+  .dd > summary {
+    list-style: none; cursor: pointer; user-select: none; display: inline-flex; align-items: center; gap: 6px;
+    border: 1px solid var(--border); border-radius: 8px; padding: 5px 10px; color: var(--text-2); font-size: 13px;
+    white-space: nowrap; max-width: 260px; overflow: hidden; text-overflow: ellipsis;
+  }
+  .dd > summary::-webkit-details-marker { display: none; }
+  .dd > summary::after { content: "▾"; font-size: 10px; color: var(--muted); }
+  .dd > summary:hover { color: var(--text); }
+  .dd.active > summary { color: var(--text); border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+  .dd .menu {
+    position: absolute; z-index: 10; top: calc(100% + 4px); left: 0; min-width: 300px; max-width: min(340px, calc(100vw - 32px));
+    max-height: 360px; overflow-y: auto; background: var(--surface); border: 1px solid var(--border);
+    border-radius: 10px; box-shadow: var(--shadow); padding: 6px;
+  }
+  .dd .menu label {
+    display: grid; grid-template-columns: auto 1fr auto; gap: 8px; align-items: center;
+    padding: 5px 8px; border-radius: 6px; cursor: pointer; font-size: 13px;
+  }
+  .dd .menu label:hover { background: var(--surface-2); }
+  .dd .menu input { accent-color: var(--accent); margin: 0; }
+  .dd .menu .num { color: var(--text-2); font-size: 12px; font-variant-numeric: tabular-nums; text-align: right; }
+  .dd .menu .sub { display: block; color: var(--muted); font-size: 11px; }
+  .dd .menu .menu-foot { display: flex; justify-content: flex-end; border-top: 1px solid var(--border); margin-top: 4px; padding: 6px 4px 2px; }
+  .dd .menu .menu-foot button { font: inherit; font-size: 12px; color: var(--text-2); background: none; border: 0; cursor: pointer; }
+  .dd .menu .menu-foot button:hover { color: var(--text); text-decoration: underline; }
+  .match-count { color: var(--text-2); font-size: 13px; margin-left: 4px; font-variant-numeric: tabular-nums; }
+
+  .layout { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 16px; align-items: start; }
+  @media (max-width: 860px) { .layout { grid-template-columns: minmax(0, 1fr); } }
+
+  .chart { position: relative; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); }
+  svg { display: block; width: 100%; height: auto; touch-action: none; cursor: grab; }
+  svg:active { cursor: grabbing; }
+
+  /* Lines keep their on-screen width when zooming. */
+  .ring, .spoke, .edge, .hl-edge, .node, .seed { vector-effect: non-scaling-stroke; }
+  .ring { fill: none; stroke: var(--border); }
+  .ring-label { fill: var(--muted); font-size: 10px; }
+  .spoke { stroke: var(--border); }
+  .edge { stroke: var(--edge); }
+  .hl-edge { stroke: var(--highlight); stroke-opacity: 0.55; }
+  .node { cursor: pointer; }
+  .node.selected { stroke: var(--highlight); stroke-width: 2px; }
+  .seed { fill: var(--text); cursor: pointer; }
+  .seed.selected { stroke: var(--accent); stroke-width: 2px; }
+  .label {
+    fill: var(--text); font-size: 12px; font-weight: 600; pointer-events: none;
+    paint-order: stroke; stroke: var(--surface); stroke-width: 4px; stroke-linejoin: round;
+  }
+
+  .tooltip {
+    position: absolute; pointer-events: none; background: var(--surface); color: var(--text);
+    border: 1px solid var(--border); border-radius: 8px; padding: 6px 10px; font-size: 12px;
+    box-shadow: var(--shadow); max-width: 260px; opacity: 0; transition: opacity 0.1s;
+  }
+  .tooltip strong { display: block; }
+  .tooltip span { color: var(--text-2); }
+
+  aside { display: flex; flex-direction: column; gap: 16px; }
+  .card { border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; background: var(--surface); }
+  .card h2 { font-size: 13px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-2); margin: 0 0 8px; }
+
+  .gradient { height: 10px; border-radius: 5px; margin: 6px 0 2px;
+    background: linear-gradient(90deg, var(--ramp-close), var(--ramp-mid), var(--ramp-far)); }
+  .gradient-labels { display: flex; justify-content: space-between; color: var(--text-2); font-size: 12px; }
+
+  .details h3 { font-size: 17px; margin: 0 0 2px; }
+  .details h3 a { color: var(--text); text-decoration-color: var(--border); text-underline-offset: 3px; }
+  .details .desc { color: var(--text-2); margin: 0 0 8px; }
+  .details .para { margin: 0 0 12px; font-size: 13px; }
+  .chip { display: inline-block; font-size: 12px; padding: 1px 8px; border-radius: 999px; background: var(--surface-2); border: 1px solid var(--border); }
+  .stats { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin: 10px 0 12px; }
+  .stat { background: var(--surface-2); border-radius: 8px; padding: 6px 10px; }
+  .stat b { display: block; font-size: 16px; font-variant-numeric: tabular-nums; }
+  .stat span { color: var(--text-2); font-size: 12px; }
+  .hint { color: var(--text-2); font-size: 13px; margin: 0; }
+  .hint + .hint { margin-top: 8px; }
+
+  /* Related-articles table */
+  .below { margin-top: 16px; }
+  .table-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 16px; margin-bottom: 8px; }
+  .table-head h2 { margin: 0; }
+  .table-head .hint { font-size: 12px; }
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { padding: 7px 10px; text-align: left; border-bottom: 1px solid var(--border); white-space: nowrap; }
+  th { color: var(--text-2); font-weight: 600; font-size: 12px; }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+  td.title { white-space: normal; min-width: 180px; }
+  td.title button { font: inherit; color: var(--text); background: none; border: 0; padding: 0; cursor: pointer; text-align: left; }
+  td.title button:hover { text-decoration: underline; }
+  td.theme { color: var(--text-2); }
+  tbody tr:hover { background: var(--surface-2); }
+  tbody tr:last-child td { border-bottom: 0; }
+
+  footer { color: var(--muted); font-size: 12px; padding-top: 16px; padding-bottom: 24px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>The Hundred Years' War on Wikipedia</h1>
+  <p class="lede">The 788 articles that the <em>Hundred Years' War</em> article links to, grouped into 12 themes by how they link (Milne–Witten similarity). An article's theme and its closeness to the war are different things: switch views to see both.</p>
+  <div class="controls">
+    <div class="toggle" role="group" aria-label="Layout">
+      <button type="button" data-view="radial" aria-pressed="true">Radial</button>
+      <button type="button" data-view="network" aria-pressed="false">Network</button>
+    </div>
+    <input type="search" id="search" list="titles" placeholder="Find an article…" aria-label="Find an article">
+    <datalist id="titles"></datalist>
+    <button type="button" class="ghost" id="reset">Reset view</button>
+  </div>
+  <div class="filters" id="filters" aria-label="Filters"></div>
+</header>
+
+<main class="layout">
+  <div class="chart">
+    <svg id="graph" viewBox="-480 -410 960 820" role="img" aria-label="Graph of the articles by theme and closeness to the war"></svg>
+    <div class="tooltip" id="tooltip"></div>
+  </div>
+  <aside>
+    <section class="card details" id="details" aria-live="polite"></section>
+    <section class="card">
+      <h2>Color: closeness to the war</h2>
+      <div class="gradient"></div>
+      <div class="gradient-labels"><span>most similar (rank 1)</span><span>least (788)</span></div>
+    </section>
+  </aside>
+</main>
+
+<section class="below">
+  <div class="card">
+    <div class="table-head">
+      <h2 id="table-title">Most related articles</h2>
+      <p class="hint">Milne–Witten similarity, 0–1. Across all articles: filters don't apply.</p>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th class="num">#</th>
+            <th>Article</th>
+            <th>Theme</th>
+            <th class="num">Milne–Witten</th>
+            <th class="num">In-link</th>
+            <th class="num">Out-link</th>
+            <th class="num">Rank vs the war</th>
+          </tr>
+        </thead>
+        <tbody id="related"></tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<footer>
+  Similarity: Milne &amp; Witten (2008), <em>An effective, low-cost measure of semantic relatedness obtained from Wikipedia links</em>, computed from each article's out-links and its in-links from all of Wikipedia. Themes: Louvain communities on each article's 10 most similar articles. Data collected from the Wikipedia API, September–October 2026.
+</footer>
+
+<script src="data.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
+<script>
+(() => {
+  const G = window.GRAPH;
+  const nodes = G.nodes;
+  const N = nodes.length;
+  const S = 300;               // layout units (−1…1) → SVG units
+  const INNER = 0.08;          // must match layout.radial_layout
+  const R = 3.6;               // node radius
+  const SEED_LABEL = `${G.seed.title} (Seed)`;
+  const clusterById = new Map(G.clusters.map(c => [c.id, c]));
+
+  for (const c of G.clusters) {
+    const ranks = nodes.filter(n => n.cluster === c.id).map(n => n.rank).sort((a, b) => a - b);
+    c.medianRank = Math.round(d3.median(ranks));
+  }
+
+  const state = { view: "radial", selected: null, zoomK: 1 };
+  const xy = (n, view = state.view) => {
+    const p = view === "radial" ? n.radial : n.network;
+    return [p[0] * S, -p[1] * S];
+  };
+  const radiusOfRank = rank => (INNER + (1 - INNER) * Math.sqrt(rank / N)) * S;
+  const fmt = d3.format(",");
+
+  // ---- small DOM helper ----
+  function el(tag, props = {}, ...children) {
+    const e = document.createElement(tag);
+    Object.assign(e, props);
+    for (const c of children) if (c != null) e.append(c);
+    return e;
+  }
+
+  // ---- filters: within a filter any checked option matches; across filters all must match ----
+  const FILTERS = [
+    {
+      key: "theme", label: "Theme",
+      options: G.clusters.map(c => ({ label: c.name, sub: `median rank ${c.medianRank}`, test: n => n.cluster === c.id })),
+    },
+    {
+      key: "closeness", label: "Closeness to the war",
+      options: [[1, 50], [51, 200], [201, 400], [401, N]].map(([a, b]) => ({ label: `Rank ${a}–${b}`, test: n => n.rank >= a && n.rank <= b })),
+    },
+    {
+      key: "seedlink", label: "Seed's link",
+      options: [
+        { label: "Written in the seed's text", test: n => !n.from_template },
+        { label: "Added by a template", sub: "navbox or sidebar", test: n => n.from_template },
+      ],
+    },
+    {
+      key: "back", label: "Links back to the war",
+      options: [{ label: "Yes", test: n => n.links_to_seed }, { label: "No", test: n => !n.links_to_seed }],
+    },
+    {
+      key: "length", label: "Length",
+      options: [
+        { label: "Under 1,000 words", test: n => n.word_count < 1000 },
+        { label: "1,000–5,000 words", test: n => n.word_count >= 1000 && n.word_count <= 5000 },
+        { label: "Over 5,000 words", test: n => n.word_count > 5000 },
+      ],
+    },
+    {
+      key: "bridge", label: "Bridge",
+      options: [
+        { label: "All 10 nearest in its theme", test: n => n.outside_share === 0 },
+        { label: "1–5 of 10 in other themes", test: n => n.outside_share > 0 && n.outside_share <= 0.5 },
+        { label: "6+ of 10 in other themes", sub: "a bridge between themes", test: n => n.outside_share > 0.5 },
+      ],
+    },
+  ];
+  for (const f of FILTERS) {
+    f.checked = new Set();
+    for (const o of f.options) o.count = nodes.filter(o.test).length;
+  }
+  const anyFilter = () => FILTERS.some(f => f.checked.size > 0);
+  const matches = n => FILTERS.every(f => f.checked.size === 0 || [...f.checked].some(k => f.options[k].test(n)));
+
+  const filterBar = document.getElementById("filters");
+  const countEl = el("span", { className: "match-count" });
+  for (const f of FILTERS) {
+    const summary = el("summary");
+    const menu = el("div", { className: "menu" });
+    f.boxes = f.options.map((o, k) => {
+      const box = el("input", { type: "checkbox" });
+      box.addEventListener("change", () => {
+        box.checked ? f.checked.add(k) : f.checked.delete(k);
+        onFiltersChange();
+      });
+      menu.append(el("label", {}, box,
+        el("span", {}, o.label, o.sub ? el("span", { className: "sub", textContent: o.sub }) : null),
+        el("span", { className: "num", textContent: fmt(o.count) })));
+      return box;
+    });
+    const clear = el("button", { type: "button", textContent: "Clear" });
+    clear.addEventListener("click", () => { f.checked.clear(); f.boxes.forEach(b => (b.checked = false)); onFiltersChange(); });
+    menu.append(el("div", { className: "menu-foot" }, clear));
+    f.details = el("details", { className: "dd" }, summary, menu);
+    f.summary = summary;
+    // Only one dropdown open at a time.
+    f.details.addEventListener("toggle", () => {
+      if (f.details.open) FILTERS.forEach(g => { if (g !== f) g.details.open = false; });
+    });
+    filterBar.append(f.details);
+  }
+  filterBar.append(countEl);
+  document.addEventListener("click", ev => {
+    if (!ev.target.closest(".dd")) FILTERS.forEach(f => (f.details.open = false));
+  });
+
+  function updateSummaries() {
+    for (const f of FILTERS) {
+      const k = [...f.checked];
+      f.summary.textContent = k.length === 0 ? f.label
+        : k.length === 1 ? `${f.label}: ${f.options[k[0]].label}`
+        : `${f.label} · ${k.length}`;
+      f.details.classList.toggle("active", k.length > 0);
+    }
+    const shown = nodes.filter(matches).length;
+    countEl.textContent = anyFilter() ? `${fmt(shown)} of ${fmt(N)} articles match` : `${fmt(N)} articles`;
+  }
+
+  function clearFilters() {
+    for (const f of FILTERS) { f.checked.clear(); f.boxes.forEach(b => (b.checked = false)); f.details.open = false; }
+  }
+
+  // ---- color: closeness (one hue; more contrast with the surface = closer) ----
+  let colorOf;
+  function setColors() {
+    const css = getComputedStyle(document.documentElement);
+    const ramp = ["--ramp-close", "--ramp-mid", "--ramp-far"].map(v => css.getPropertyValue(v).trim());
+    const interp = d3.interpolateRgbBasis(ramp);
+    colorOf = rank => interp((rank - 1) / (N - 1));
+  }
+  setColors();
+
+  // ---- svg layers ----
+  const svg = d3.select("#graph");
+  const root = svg.append("g");
+  const gScale = root.append("g");
+  const gSpokes = root.append("g");
+  const gEdges = root.append("g");
+  const gHl = root.append("g");
+  const gNodes = root.append("g");
+  const gLabels = root.append("g");
+
+  const rings = [10, 100, 300, 788];
+  gScale.selectAll("circle").data(rings).join("circle").attr("class", "ring").attr("r", radiusOfRank);
+  gScale.selectAll("text").data(rings).join("text")
+    .attr("class", "ring-label").attr("x", 4).attr("y", r => -radiusOfRank(r) - 3).text(r => `rank ${r}`);
+
+  gSpokes.selectAll("line").data(G.clusters).join("line")
+    .attr("class", "spoke")
+    .attr("x1", c => Math.cos(c.wedge[0] - 0.02) * INNER * S).attr("y1", c => -Math.sin(c.wedge[0] - 0.02) * INNER * S)
+    .attr("x2", c => Math.cos(c.wedge[0] - 0.02) * 1.03 * S).attr("y2", c => -Math.sin(c.wedge[0] - 0.02) * 1.03 * S);
+
+  const edgeSel = gEdges.selectAll("line").data(G.edges).join("line")
+    .attr("class", "edge")
+    .attr("x1", e => xy(nodes[e[0]], "network")[0]).attr("y1", e => xy(nodes[e[0]], "network")[1])
+    .attr("x2", e => xy(nodes[e[1]], "network")[0]).attr("y2", e => xy(nodes[e[1]], "network")[1]);
+
+  // Draw the farthest articles first, so the closest sit on top.
+  const order = d3.range(N).sort((a, b) => nodes[b].rank - nodes[a].rank);
+  const nodeSel = gNodes.selectAll("circle").data(order, i => i).join("circle")
+    .attr("class", "node").attr("r", R)
+    .attr("cx", i => xy(nodes[i])[0]).attr("cy", i => xy(nodes[i])[1]);
+
+  const seedSel = gNodes.append("path").attr("class", "seed").attr("d", d3.symbol(d3.symbolStar, 220)());
+
+  const labelPos = (c, view = state.view) => {
+    if (view === "network") return { x: c.network_label[0] * S, y: -c.network_label[1] * S, anchor: "middle" };
+    const mid = (c.wedge[0] + c.wedge[1]) / 2;
+    const cos = Math.cos(mid), sin = Math.sin(mid);
+    return { x: cos * 1.1 * S, y: -sin * 1.1 * S, anchor: cos > 0.25 ? "start" : cos < -0.25 ? "end" : "middle" };
+  };
+  const labelSel = gLabels.selectAll("text").data(G.clusters).join("text").attr("class", "label");
+  labelSel.each(function (c) {
+    const words = c.name.split(" ");
+    const half = Math.ceil(words.length / 2);
+    const lines = c.name.length > 18 ? [words.slice(0, half).join(" "), words.slice(half).join(" ")] : [c.name];
+    d3.select(this).selectAll("tspan").data(lines).join("tspan")
+      .attr("x", 0)
+      .attr("dy", (d, i) => i === 0 ? (lines.length === 2 ? "-0.2em" : "0.35em") : "1.15em")
+      .text(d => d);
+  });
+  labelSel.attr("text-anchor", c => labelPos(c).anchor)
+    .attr("transform", c => { const p = labelPos(c); return `translate(${p.x},${p.y})`; });
+
+  // ---- styling that depends on state ----
+  function paint() {
+    const sel = state.selected;
+    const near = typeof sel === "number" ? new Set(nodes[sel].neighbors.map(nb => nb[0])) : null;
+    const filtered = anyFilter();
+    const ok = nodes.map(matches);
+    nodeSel
+      .attr("fill", i => colorOf(nodes[i].rank))
+      .attr("fill-opacity", i => {
+        if (!ok[i]) return 0.08;
+        if (near && i !== sel && !near.has(i)) return 0.35;
+        return 1;
+      })
+      .classed("selected", i => i === sel);
+    edgeSel.attr("stroke-opacity", e => {
+      if (state.view !== "network") return 0;
+      if (!filtered) return 0.35;
+      return ok[e[0]] && ok[e[1]] ? 0.5 : 0.03;
+    }).attr("stroke-width", 0.6);
+    const themeShown = new Set(nodes.filter((n, i) => ok[i]).map(n => n.cluster));
+    labelSel.attr("opacity", c => themeShown.has(c.id) ? 1 : 0.25);
+    seedSel.attr("opacity", state.view === "radial" ? 1 : 0)
+      .style("pointer-events", state.view === "radial" ? null : "none")
+      .classed("selected", sel === "seed");
+    gScale.attr("opacity", state.view === "radial" ? 1 : 0);
+    gSpokes.attr("opacity", state.view === "radial" ? 1 : 0);
+    drawHighlight();
+  }
+
+  function drawHighlight() {
+    const sel = state.selected;
+    const data = typeof sel === "number" ? nodes[sel].neighbors.map(nb => [sel, nb[0]]) : [];
+    gHl.selectAll("line").data(data).join("line")
+      .attr("class", "hl-edge")
+      .attr("stroke-width", 1.2)
+      .attr("x1", e => xy(nodes[e[0]])[0]).attr("y1", e => xy(nodes[e[0]])[1])
+      .attr("x2", e => xy(nodes[e[1]])[0]).attr("y2", e => xy(nodes[e[1]])[1]);
+  }
+
+  function onFiltersChange() { updateSummaries(); paint(); }
+
+  // ---- view toggle ----
+  function setView(view) {
+    if (view === state.view) return;
+    state.view = view;
+    d3.selectAll(".toggle button").attr("aria-pressed", function () { return this.dataset.view === view; });
+    gHl.selectAll("line").remove();
+    const t = svg.transition().duration(900).ease(d3.easeCubicInOut);
+    nodeSel.transition(t).attr("cx", i => xy(nodes[i])[0]).attr("cy", i => xy(nodes[i])[1]);
+    labelSel.transition(t).attr("transform", c => { const p = labelPos(c); return `translate(${p.x},${p.y})`; })
+      .on("start", function (c) { d3.select(this).attr("text-anchor", labelPos(c).anchor); });
+    if (view === "radial") edgeSel.transition().duration(250).attr("stroke-opacity", 0);
+    t.on("end", paint);
+    seedSel.transition(t).attr("opacity", view === "radial" ? 1 : 0);
+    gScale.transition(t).attr("opacity", view === "radial" ? 1 : 0);
+    gSpokes.transition(t).attr("opacity", view === "radial" ? 1 : 0);
+  }
+  d3.selectAll(".toggle button").on("click", function () { setView(this.dataset.view); });
+
+  // ---- zoom and pan ----
+  const zoom = d3.zoom().scaleExtent([0.7, 12]).on("zoom", ev => {
+    const k = ev.transform.k;
+    root.attr("transform", ev.transform);
+    state.zoomK = k;
+    // Marks and text keep (roughly) their on-screen size while positions spread apart.
+    nodeSel.attr("r", R / Math.sqrt(k));
+    seedSel.attr("transform", `scale(${1 / Math.sqrt(k)})`);
+    labelSel.style("font-size", `${12 / k}px`).style("stroke-width", `${4 / k}px`);
+    gScale.selectAll("text").style("font-size", `${10 / k}px`).attr("y", r => -radiusOfRank(r) - 3 / k);
+  });
+  svg.call(zoom).on("dblclick.zoom", null);
+  function centerOn(i) {
+    const [x, y] = i === "seed" ? [0, 0] : xy(nodes[i]);
+    const k = Math.max(state.zoomK, 2.5);
+    svg.transition().duration(700).call(zoom.transform, d3.zoomIdentity.scale(k).translate(-x, -y));
+  }
+
+  // ---- tooltip ----
+  const tip = d3.select("#tooltip");
+  const chart = document.querySelector(".chart");
+  function showTip(ev, html) {
+    const box = chart.getBoundingClientRect();
+    let x = ev.clientX - box.left + 12, y = ev.clientY - box.top + 12;
+    if (x > box.width - 270) x -= 290;
+    tip.html(html).style("left", `${x}px`).style("top", `${y}px`).style("opacity", 1);
+  }
+  const hideTip = () => tip.style("opacity", 0);
+  const esc = s => s.replace(/[&<>"']/g, ch => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[ch]));
+
+  nodeSel
+    .on("pointerenter", (ev, i) => {
+      const n = nodes[i];
+      showTip(ev, `<strong>${esc(n.title)}</strong><span>${esc(clusterById.get(n.cluster).name)} · rank ${n.rank} of ${N}</span>`);
+    })
+    .on("pointermove", ev => showTip(ev, tip.html()))
+    .on("pointerleave", hideTip)
+    .on("click", (ev, i) => { ev.stopPropagation(); select(i); });
+  seedSel
+    .on("pointerenter", ev => showTip(ev, `<strong>${esc(G.seed.title)}</strong><span>the seed: every article here is linked from it</span>`))
+    .on("pointerleave", hideTip)
+    .on("click", ev => { ev.stopPropagation(); select("seed"); });
+  svg.on("click", () => { if (state.selected !== null) select(null); });
+
+  // ---- side panel ----
+  const details = document.getElementById("details");
+  const wiki = title => "https://en.wikipedia.org/wiki/" + encodeURIComponent(title.replaceAll(" ", "_"));
+  const stat = (value, label) => el("div", { className: "stat" }, el("b", { textContent: value }), el("span", { textContent: label }));
+
+  function renderIntro() {
+    details.replaceChildren(
+      el("h2", { textContent: "How to read it" }),
+      el("p", { className: "hint", innerHTML: "<b>Radial:</b> the war sits at the center. Each wedge is a theme, and the closer an article is to the center, the more similar it is to the war." }),
+      el("p", { className: "hint", innerHTML: "<b>Network:</b> similar articles are pulled together, so themes become regions. Watch an article move between views: its theme stays, its closeness changes." }),
+      el("p", { className: "hint", textContent: "Click an article for details, use the filters to narrow the articles down, scroll to zoom." }),
+    );
+  }
+
+  function renderSeed() {
+    details.replaceChildren(
+      el("h3", {}, el("a", { href: wiki(G.seed.title), target: "_blank", rel: "noopener", textContent: G.seed.title })),
+      el("p", { className: "desc", textContent: G.seed.shortdesc }),
+      el("span", { className: "chip", textContent: "the seed" }),
+      el("p", { className: "para", style: "margin-top: 10px", textContent: G.seed.paragraph }),
+      el("p", { className: "hint", textContent: `Every one of the ${N} articles is here because this article links to it. Ranks measure each one's similarity to it.` }),
+    );
+  }
+
+  function renderNode(i) {
+    const n = nodes[i];
+    const outside = Math.round(n.outside_share * 10);
+    details.replaceChildren(
+      el("h3", {}, el("a", { href: wiki(n.title), target: "_blank", rel: "noopener", textContent: n.title })),
+      n.shortdesc ? el("p", { className: "desc", textContent: n.shortdesc }) : null,
+      el("span", { className: "chip", textContent: clusterById.get(n.cluster).name }),
+      el("div", { className: "stats" },
+        stat(`${n.rank} / ${N}`, "rank in similarity to the war"),
+        stat(n.milne_witten.toFixed(2), "Milne–Witten vs the war"),
+        stat(fmt(n.word_count), "words"),
+        stat(n.links_to_seed ? "Yes" : "No", "links back to the war"),
+      ),
+      n.paragraph ? el("p", { className: "para", textContent: n.paragraph }) : null,
+      el("p", { className: "hint", textContent: (outside === 0
+        ? "All 10 of its most similar articles are in the same theme."
+        : `${outside} of its 10 most similar articles are in other themes${outside >= 6 ? ": a bridge between themes." : "."}`)
+        + (n.from_template ? " The seed links to it through a template." : " The seed links to it in its own text.") }),
+    );
+  }
+
+  // ---- related-articles table ----
+  const tableTitle = document.getElementById("table-title");
+  const related = document.getElementById("related");
+  function renderTable() {
+    const sel = state.selected;
+    let rows;
+    if (typeof sel === "number") {
+      tableTitle.textContent = `Most related to ${nodes[sel].title}`;
+      rows = nodes[sel].neighbors.map(([j, mw, inl, outl]) => ({ j, mw, inl, outl }));
+    } else {
+      tableTitle.textContent = `Most related to ${G.seed.title} (the seed)`;
+      rows = d3.range(N).sort((a, b) => nodes[a].rank - nodes[b].rank).slice(0, 10)
+        .map(j => ({ j, mw: nodes[j].milne_witten, inl: nodes[j].inlink, outl: nodes[j].outlink }));
+    }
+    related.replaceChildren(...rows.map((r, k) => {
+      const m = nodes[r.j];
+      const btn = el("button", { type: "button", textContent: m.title });
+      btn.addEventListener("click", () => { select(r.j); centerOn(r.j); });
+      return el("tr", {},
+        el("td", { className: "num", textContent: k + 1 }),
+        el("td", { className: "title" }, btn),
+        el("td", { className: "theme", textContent: clusterById.get(m.cluster).name }),
+        el("td", { className: "num", textContent: r.mw.toFixed(3) }),
+        el("td", { className: "num", textContent: r.inl.toFixed(3) }),
+        el("td", { className: "num", textContent: r.outl.toFixed(3) }),
+        el("td", { className: "num", textContent: m.rank }));
+    }));
+  }
+
+  function select(i) {
+    state.selected = i;
+    if (i === null) renderIntro();
+    else if (i === "seed") renderSeed();
+    else renderNode(i);
+    renderTable();
+    paint();
+  }
+
+  // ---- search ----
+  const norm = s => s.toLowerCase().replace(/[’']/g, "").trim();
+  const byTitle = new Map(nodes.map((n, i) => [norm(n.title), i]));
+  const seedKeys = new Set([norm(SEED_LABEL), norm(G.seed.title), norm(`${G.seed.title} (seed)`)]);
+  const datalist = document.getElementById("titles");
+  datalist.append(el("option", { value: SEED_LABEL }));
+  for (const n of [...nodes].sort((a, b) => a.title.localeCompare(b.title))) datalist.append(el("option", { value: n.title }));
+  const search = document.getElementById("search");
+  function find() {
+    const q = norm(search.value);
+    if (!q) return;
+    if (seedKeys.has(q) || q === "seed") { select("seed"); if (state.view === "radial") centerOn("seed"); return; }
+    let i = byTitle.get(q);
+    if (i === undefined) i = nodes.findIndex(n => norm(n.title).includes(q));
+    if (i >= 0) { select(i); centerOn(i); }
+  }
+  search.addEventListener("change", find);
+  search.addEventListener("keydown", ev => { if (ev.key === "Enter") find(); });
+
+  // ---- reset: zoom, filters, selection and search ----
+  function resetAll() {
+    clearFilters();
+    updateSummaries();
+    search.value = "";
+    select(null);
+    svg.transition().duration(600).call(zoom.transform, d3.zoomIdentity);
+  }
+  document.getElementById("reset").addEventListener("click", resetAll);
+  document.addEventListener("keydown", ev => {
+    if (ev.key !== "Escape") return;
+    const open = FILTERS.find(f => f.details.open);
+    if (open) open.details.open = false;
+    else select(null);
+  });
+
+  window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => { setColors(); paint(); });
+
+  updateSummaries();
+  select(null);
+})();
+</script>
+</body>
+</html>
