@@ -125,8 +125,10 @@ def get_written_links(title):
 
     get_links() also returns links that templates add when the page is
     displayed, such as navboxes and sidebars. A link that is in get_links()
-    but not here came from a template. Links written inside citations or
-    infobox fields count as written. Titles are resolved to match get_links().
+    but not here came from a template. Links written as [[...]] inside
+    citations or infobox fields count as written; links a template builds
+    from a parameter (e.g. a citation's author-link=) don't. Titles are
+    resolved to match get_links().
     """
     path = _cache_path("written_links", title)
     if path.exists():
