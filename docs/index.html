@@ -186,7 +186,7 @@
 <body>
 <header>
   <h1>The Hundred Years' War on Wikipedia</h1>
-  <p class="lede">The 788 articles that the <em>Hundred Years' War</em> article links to, grouped into 12 themes by how they link (Milne–Witten similarity). An article's theme and its closeness to the war are different things: switch views to see both.</p>
+  <p class="lede">The <span id="n-articles"></span> articles that the <em>Hundred Years' War</em> article links to in its body text, grouped into <span id="n-themes"></span> themes by how they link (Milne–Witten similarity). An article's theme and its closeness to the war are different things: switch views to see both.</p>
   <div class="controls">
     <div class="toggle" role="group" aria-label="Layout">
       <button type="button" data-view="radial" aria-pressed="true">Radial</button>
@@ -209,7 +209,7 @@
     <section class="card">
       <h2>Color: closeness to the war</h2>
       <div class="gradient"></div>
-      <div class="gradient-labels"><span>most similar (rank 1)</span><span>least (788)</span></div>
+      <div class="gradient-labels"><span>most similar (rank 1)</span><span>least (<span id="n-least"></span>)</span></div>
     </section>
   </aside>
 </main>
@@ -254,6 +254,9 @@
   const INNER = 0.08;          // must match layout.radial_layout
   const R = 3.6;               // node radius
   const SEED_LABEL = `${G.seed.title} (Seed)`;
+  document.getElementById("n-articles").textContent = N;
+  document.getElementById("n-themes").textContent = G.clusters.length;
+  document.getElementById("n-least").textContent = N;
   const clusterById = new Map(G.clusters.map(c => [c.id, c]));
 
   for (const c of G.clusters) {
@@ -285,14 +288,7 @@
     },
     {
       key: "closeness", label: "Closeness to the war",
-      options: [[1, 50], [51, 200], [201, 400], [401, N]].map(([a, b]) => ({ label: `Rank ${a}–${b}`, test: n => n.rank >= a && n.rank <= b })),
-    },
-    {
-      key: "seedlink", label: "Seed's link",
-      options: [
-        { label: "Written in the seed's text", test: n => !n.from_template },
-        { label: "Added by a template", sub: "navbox or sidebar", test: n => n.from_template },
-      ],
+      options: [[1, 25], [26, 100], [101, 200], [201, N]].map(([a, b]) => ({ label: `Rank ${a}–${b}`, test: n => n.rank >= a && n.rank <= b })),
     },
     {
       key: "back", label: "Links back to the war",
@@ -390,7 +386,7 @@
   const gNodes = root.append("g");
   const gLabels = root.append("g");
 
-  const rings = [10, 100, 300, 788];
+  const rings = [10, 50, 150, N];
   gScale.selectAll("circle").data(rings).join("circle").attr("class", "ring").attr("r", radiusOfRank);
   gScale.selectAll("text").data(rings).join("text")
     .attr("class", "ring-label").attr("x", 4).attr("y", r => -radiusOfRank(r) - 3).text(r => `rank ${r}`);
@@ -575,8 +571,7 @@
       n.paragraph ? el("p", { className: "para", textContent: n.paragraph }) : null,
       el("p", { className: "hint", textContent: (outside === 0
         ? "All 10 of its most similar articles are in the same theme."
-        : `${outside} of its 10 most similar articles are in other themes${outside >= 6 ? ": a bridge between themes." : "."}`)
-        + (n.from_template ? " The seed links to it through a template." : " The seed links to it in its own text.") }),
+        : `${outside} of its 10 most similar articles are in other themes${outside >= 6 ? ": a bridge between themes." : "."}`) }),
     );
   }
 

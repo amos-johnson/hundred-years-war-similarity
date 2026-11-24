@@ -9,3 +9,4 @@ networkx
 scikit-learn
 tqdm
 ipykernel
+mwparserfromhell

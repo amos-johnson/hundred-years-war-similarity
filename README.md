@@ -1,6 +1,6 @@
 # Hundred Years' War: link-based similarity
 
-Which Wikipedia articles are most closely related to the [Hundred Years' War](https://en.wikipedia.org/wiki/Hundred_Years%27_War), and how do they group together? This project collects the 788 articles the war's page links to, measures how similar every pair is from their links (**Milne & Witten, 2008**), clusters them into themes and publishes the result as an interactive graph.
+Which Wikipedia articles are most closely related to the [Hundred Years' War](https://en.wikipedia.org/wiki/Hundred_Years%27_War), and how do they group together? This project collects the 275 articles the war's page links to in its body text, measures how similar every pair is from their links (**Milne & Witten, 2008**), clusters them into themes and publishes the result as an interactive graph.
 
 **[▶ Open the interactive graph](https://amos-johnson.github.io/hundred-years-war-similarity/)**
 
@@ -8,34 +8,20 @@ Which Wikipedia articles are most closely related to the [Hundred Years' War](ht
 
 ## Results
 
-- **12 themes:**
-  - the war's three phases: Edwardian, Brittany and the Caroline phase, Lancastrian
-  - Joan of Arc
-  - the English and French monarchies
-  - Burgundy and the Low Countries
-  - other Anglo-French wars
-  - the Middle Ages in Europe and medieval society
-  - towns and regions
-  - war in general
-- **The themes are stable:**
-  - adjusted Rand index 0.89 across random seeds
-  - 0.79 when 20% of the articles are dropped at random
-  - 0.77 with a different neighborhood size
-- **Theme and closeness are different axes.**
-  - The Lancastrian phase and Joan of Arc sit closest to the war (median rank 230–260 of 788).
-  - War in general and towns and regions sit farthest (640–690).
-- **Silhouette alone misleads.** Hierarchical clustering with average linkage scores a higher silhouette than Louvain (0.28 vs 0.21), yet it puts 765 of the 788 articles in one cluster. Stability and inspection were needed to choose.
-- **Navboxes leave a mark.** Templates (navboxes, sidebars) add 69% of the links between articles. One theme is 94% template-linked from the seed, while the two monarchies are 14–22%. So clusters partly follow navboxes, but most of the structure doesn't.
+*This branch is being rebuilt on articles linked from the war's body text only (275 of the 788 linked articles). The themes will be named and the findings written up next.*
+
+- **Most links don't come from the body text.** Of the 788 articles the war's page links to, 452 are linked only by templates (navboxes, sidebars, hatnotes) and 61 only by the infobox, captions, tables, citations or end sections. Keeping the 275 prose-linked articles cuts the share of template links between articles from 69% to 28%.
+- **8 themes**, less stable than with every linked article: adjusted Rand index 0.78 across random seeds (0.89 before) and 0.64 when 20% of the articles are dropped.
 - **The two halves of the measure capture different things.**
   - In-links (which pages link to both articles) find the war's core: Edward III, Charles VII, Henry V, Crécy, Agincourt.
-  - Out-links (which pages both articles link to) find groups listed together, such as the war's phases.
-  - Spearman correlation between the two: 0.42.
+  - Out-links (which pages both articles link to) find articles with overlapping link lists, such as the war's phases.
+  - Spearman correlation between the two: 0.55.
 
 ## Approach
 
 | Step | Notebook | What it does |
 |---|---|---|
-| 1. Collect and explore | [`01_collect_and_explore`](notebooks/01_collect_and_explore.ipynb) | The seed article and every article it links to, from the Wikipedia API: links (with redirects resolved), text and short descriptions. Each link is flagged if a template added it rather than the article's own text. |
+| 1. Collect and explore | [`01_collect_and_explore`](notebooks/01_collect_and_explore.ipynb) | The seed article and every article it links to in its body text, from the Wikipedia API: links (with redirects resolved), text and short descriptions. The seed's links are sorted by where they sit on the page (prose, infobox, captions, references, end sections, templates); only prose-linked articles are kept. |
 | 2. Similarity | [`02_milne_witten`](notebooks/02_milne_witten.ipynb) | Every pair of articles compared by the pages they link to (out-links, TF-IDF-style weighted cosine) and the pages that link to them (in-links from all 7.2 million English Wikipedia articles, Normalized Google Distance). The two are combined by averaging percentile ranks, because their scales differ by about 100×. |
 | 3. Clustering | [`03_clustering`](notebooks/03_clustering.ipynb) | Louvain communities on a graph joining each article to its 10 most similar articles. Evaluated by silhouette, stability (seeds, subsamples, neighborhood size) and inspection; profiled with metadata. |
 | 4. Interactive graph | [`04_graph`](notebooks/04_graph.ipynb) | Radial and force-directed layouts computed in Python, exported to a static d3 page with filters, search and a table of related articles. |
@@ -51,7 +37,7 @@ src/
   clustering.py    neighbor graph, Louvain, stability
   layout.py        radial and network layouts
 notebooks/         the four steps above, with outputs
-data/processed/    Parquet tables: articles, links, pairs, seed_similarity, clusters
+data/processed/    Parquet tables: articles, links, seed_links, pairs, seed_similarity, clusters
 docs/              the interactive page (served by GitHub Pages)
 ```
 

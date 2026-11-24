@@ -2,6 +2,7 @@
 
     get_links(title)          -> the articles `title` links to, redirects resolved
     get_written_links(title)  -> the ones written in its own source text (not added by templates)
+    get_link_channels(title, as_of) -> where on the page each link sits (prose, infobox, references...)
     get_article(title)        -> its page ID, short description and plain text
     get_backlinks(title)      -> the articles that link to `title`, from all of Wikipedia
     get_article_count()       -> how many articles English Wikipedia has
@@ -138,17 +139,29 @@ def get_written_links(title):
                      "rvprop": "content", "rvslots": "main"})["query"]["pages"][0]
     wikitext = page["revisions"][0]["slots"]["main"]["content"]
 
-    # A wiki link is [[Target]] or [[Target|shown text]]; drop any #section part.
-    targets = set()
-    for target in re.findall(r"\[\[([^\[\]|]+)", wikitext):
-        target = target.split("#")[0].replace("_", " ").strip().lstrip(":")
-        if target:
-            targets.add(target[0].upper() + target[1:])
+    # A wiki link is [[Target]] or [[Target|shown text]].
+    targets = {_link_target(t) for t in re.findall(r"\[\[([^\[\]|]+)", wikitext)} - {""}
+    canonical = _canonical_titles(title, targets)
 
-    # Most targets already match a title from get_links(). Look up the rest
-    # (redirects and other spellings), 50 titles per request.
+    result = sorted(set(canonical.values()))
+    _save(path, result)
+    return result
+
+
+def _link_target(target):
+    """A link's target as a title: no #section part, spaces for underscores, first letter capitalized."""
+    target = target.split("#")[0].replace("_", " ").strip().lstrip(":")
+    return target[0].upper() + target[1:] if target else ""
+
+
+def _canonical_titles(title, targets):
+    """{target: canonical title} for link targets found in `title`'s wikitext, resolved to match get_links().
+
+    Most targets already match a title from get_links(). The rest (redirects
+    and other spellings) are looked up, 50 titles per request.
+    """
     canonical = {t: t for t in targets if t in get_links(title)}
-    unknown = sorted(targets - set(canonical))
+    unknown = sorted(set(targets) - set(canonical))
     for i in range(0, len(unknown), 50):
         batch = unknown[i:i + 50]
         query = _api_get({"action": "query", "titles": "|".join(batch), "redirects": 1})["query"]
@@ -157,8 +170,90 @@ def get_written_links(title):
         for t in batch:
             t2 = normalized.get(t, t)
             canonical[t] = redirects.get(t2, t2)
+    return canonical
 
-    result = sorted(set(canonical.values()))
+
+# Where a link sits in the wikitext. Links inside these templates and tags
+# aren't part of the body text. Quotation templates are, since they quote a source in the text.
+QUOTE_TEMPLATES = {"blockquote", "quote", "quotation", "cquote"}
+TAG_CHANNELS = {"ref": "reference", "table": "table", "gallery": "caption"}
+
+
+def get_link_channels(title, as_of):
+    """Where `title` links to each article, as {article: channel}.
+
+    Channels, from the page's wikitext (the revision current at `as_of`, an ISO
+    date, so it matches the cached link lists):
+      prose            body text (lead and sections, quotations included)
+      infobox          the infobox at the top of the page
+      caption          image captions and galleries
+      table            tables in the body, e.g. a list of prominent figures
+      reference        citations inside <ref> tags
+      footnote         explanatory notes ({{efn}} and similar)
+      other template   any other template written in the body
+      end section      See also, Notes, References, Further reading, External links...
+      added by template  in get_links() but not in the wikitext at all: navboxes,
+                       sidebars, hatnotes such as {{Main}}, a citation's author-link=
+    An article linked through several channels gets the first one in this
+    order, so "prose" means it is linked at least once in the body text.
+    """
+    import mwparserfromhell  # only needed here
+
+    path = _cache_path("link_channels", title)
+    if path.exists():
+        return json.loads(path.read_text())
+
+    page = _api_get({"action": "query", "titles": title, "prop": "revisions",
+                     "rvprop": "content|ids|timestamp", "rvslots": "main", "rvlimit": 1,
+                     "rvdir": "older", "rvstart": f"{as_of}T23:59:59Z"})["query"]["pages"][0]
+    revision = page["revisions"][0]
+    wikitext = revision["slots"]["main"]["content"]
+
+    # The body ends at the first end-section heading.
+    end = re.search(rf"\n==\s*(?:{END_SECTIONS})\s*==", wikitext)
+    body, tail = (wikitext[:end.start()], wikitext[end.start():]) if end else (wikitext, "")
+
+    def channel(code, link):
+        # The outermost enclosing template or tag decides.
+        for node in code.get_ancestors(link):
+            if isinstance(node, mwparserfromhell.nodes.Tag):
+                tag = str(node.tag).strip().lower()
+                if tag in TAG_CHANNELS:
+                    return TAG_CHANNELS[tag]
+            elif isinstance(node, mwparserfromhell.nodes.Template):
+                name = str(node.name).strip().lower()
+                if name.startswith("infobox"):
+                    return "infobox"
+                if name in {"efn", "efn-ua", "efn-lr", "refn", "notetag"}:
+                    return "footnote"
+                if name not in QUOTE_TEMPLATES:
+                    return "other template"
+            elif isinstance(node, mwparserfromhell.nodes.Wikilink):
+                if re.match(r"(?i)(file|image):", str(node.title).strip()):
+                    return "caption"
+        return "prose"
+
+    found = []  # (target, channel)
+    for part, in_body in [(body, True), (tail, False)]:
+        code = mwparserfromhell.parse(part)
+        for link in code.filter_wikilinks(recursive=True):
+            target = _link_target(str(link.title))
+            if target and not re.match(r"(?i)(file|image|category):", target):
+                found.append((target, channel(code, link) if in_body else "end section"))
+
+    order = ["prose", "infobox", "caption", "table", "reference", "footnote", "other template", "end section"]
+    canonical = _canonical_titles(title, {t for t, _ in found})
+    channels = {}
+    for target, ch in found:
+        t = canonical[target]
+        if t not in channels or order.index(ch) < order.index(channels[t]):
+            channels[t] = ch
+    links = get_links(title)
+    result = {
+        "revision": revision["revid"],
+        "timestamp": revision["timestamp"],
+        "channels": {t: channels.get(t, "added by template") for t in sorted(links)},
+    }
     _save(path, result)
     return result
 
