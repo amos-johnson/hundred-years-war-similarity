@@ -27,6 +27,18 @@ def network_layout(graph, seed=0):
     return xy / np.abs(xy.to_numpy()).max()
 
 
+def spread_clusters(xy, labels, factor=1.0):
+    """Move each cluster as a block away from the overall center, for readability.
+
+    Every article shifts by `factor` × (its cluster's center − the overall center),
+    so a cluster keeps its shape and only the gaps between clusters grow. This
+    exaggerates how separate the clusters look: report it next to the picture.
+    """
+    centers = xy.groupby(labels[xy.index].to_numpy()).transform("mean")
+    out = xy + factor * (centers - xy.mean())
+    return out / np.abs(out.to_numpy()).max()
+
+
 def cluster_order(similarity, labels):
     """Clusters in an order that puts similar ones side by side.
 

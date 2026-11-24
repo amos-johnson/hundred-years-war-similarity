@@ -61,13 +61,12 @@
     color: var(--text);
     font: 14px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif;
   }
-  header, main, .below, footer { max-width: 1280px; margin: 0 auto; padding: 0 16px; }
+  header, main, .below, footer { max-width: 1440px; margin: 0 auto; padding: 0 16px; }
   header { padding-top: 20px; }
   h1 { font-size: 22px; margin: 0 0 4px; letter-spacing: -0.01em; }
-  .lede { margin: 0 0 14px; color: var(--text-2); max-width: 70ch; }
+  .lede { margin: 0 0 14px; color: var(--text-2); max-width: 80ch; }
 
-  .controls, .filters { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 10px; }
-  .filters { margin-bottom: 14px; }
+  .controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 12px; }
   .toggle { display: inline-flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
   .toggle button {
     border: 0; background: transparent; color: var(--text-2); padding: 6px 14px; font: inherit; cursor: pointer;
@@ -83,37 +82,46 @@
   }
   .ghost:hover { color: var(--text); }
 
-  /* Multiple-choice dropdown filters */
-  .dd { position: relative; }
-  .dd > summary {
-    list-style: none; cursor: pointer; user-select: none; display: inline-flex; align-items: center; gap: 6px;
-    border: 1px solid var(--border); border-radius: 8px; padding: 5px 10px; color: var(--text-2); font-size: 13px;
-    white-space: nowrap; max-width: 260px; overflow: hidden; text-overflow: ellipsis;
-  }
-  .dd > summary::-webkit-details-marker { display: none; }
-  .dd > summary::after { content: "▾"; font-size: 10px; color: var(--muted); }
-  .dd > summary:hover { color: var(--text); }
-  .dd.active > summary { color: var(--text); border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
-  .dd .menu {
-    position: absolute; z-index: 10; top: calc(100% + 4px); left: 0; min-width: 300px; max-width: min(340px, calc(100vw - 32px));
-    max-height: 360px; overflow-y: auto; background: var(--surface); border: 1px solid var(--border);
-    border-radius: 10px; box-shadow: var(--shadow); padding: 6px;
-  }
-  .dd .menu label {
-    display: grid; grid-template-columns: auto 1fr auto; gap: 8px; align-items: center;
-    padding: 5px 8px; border-radius: 6px; cursor: pointer; font-size: 13px;
-  }
-  .dd .menu label:hover { background: var(--surface-2); }
-  .dd .menu input { accent-color: var(--accent); margin: 0; }
-  .dd .menu .num { color: var(--text-2); font-size: 12px; font-variant-numeric: tabular-nums; text-align: right; }
-  .dd .menu .sub { display: block; color: var(--muted); font-size: 11px; }
-  .dd .menu .menu-foot { display: flex; justify-content: flex-end; border-top: 1px solid var(--border); margin-top: 4px; padding: 6px 4px 2px; }
-  .dd .menu .menu-foot button { font: inherit; font-size: 12px; color: var(--text-2); background: none; border: 0; cursor: pointer; }
-  .dd .menu .menu-foot button:hover { color: var(--text); text-decoration: underline; }
-  .match-count { color: var(--text-2); font-size: 13px; margin-left: 4px; font-variant-numeric: tabular-nums; }
+  /* Stats bar: the filtered articles vs all articles (and the selected article) */
+  .stats-bar { display: grid; grid-template-columns: repeat(auto-fit, minmax(128px, 1fr)); gap: 8px; }
+  .tile { background: var(--surface-2); border-radius: 8px; padding: 8px 10px; min-width: 0; transition: opacity 0.15s; }
+  .tile .lab { display: block; color: var(--text-2); font-size: 12px; }
+  .tile b { display: block; font-size: 20px; font-weight: 600; font-variant-numeric: tabular-nums; line-height: 1.3; }
+  .tile .all, .tile .sel { display: block; font-size: 12px; font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .tile .all { color: var(--muted); }
+  .tile .sel { color: var(--accent); }
+  .stats-bar.few .tile:not(:first-child) b { color: var(--muted); }
+  .stats-bar { margin-bottom: 14px; }
+  .stats-note { color: var(--text); font-weight: 600; font-size: 12px; margin: -6px 0 14px; }
 
-  .layout { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 16px; align-items: start; }
-  @media (max-width: 860px) { .layout { grid-template-columns: minmax(0, 1fr); } }
+  /* Layout: filters | details (only when an article is selected) above the graph */
+  .layout { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 16px; align-items: start; }
+  .center { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+  .layout:not(.has-details) #details { display: none; }
+  @media (max-width: 960px) {
+    .layout { grid-template-columns: minmax(0, 1fr); }
+  }
+
+  /* Filters: always-open checkbox lists with live counts */
+  .facets { display: flex; flex-direction: column; gap: 14px; }
+  @media (max-width: 960px) {
+    .facets { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
+  }
+  .facet h2 { display: flex; justify-content: space-between; align-items: baseline; font-size: 13px; margin: 0 0 4px; }
+  .facet h2 button { font: inherit; font-size: 12px; font-weight: 400; color: var(--text-2); background: none; border: 0; padding: 0; cursor: pointer; visibility: hidden; }
+  .facet.active h2 button { visibility: visible; }
+  .facet h2 button:hover { color: var(--text); text-decoration: underline; }
+  .facet label {
+    display: grid; grid-template-columns: auto 1fr auto; gap: 8px; align-items: start;
+    padding: 3px 6px; margin: 0 -6px; border-radius: 6px; cursor: pointer; font-size: 13px; line-height: 1.35;
+  }
+  .facet label:hover { background: var(--surface-2); }
+  .facet input { accent-color: var(--accent); margin: 2px 0 0; }
+  .facet .num { color: var(--text-2); font-size: 12px; font-variant-numeric: tabular-nums; text-align: right; }
+  .facet .sub { display: block; color: var(--muted); font-size: 11px; }
+  .facet label.zero:not(:has(input:checked)) { color: var(--muted); }
+  .legend { border-top: 1px solid var(--border); padding-top: 12px; }
+  .legend h2 { font-size: 13px; margin: 0; }
 
   .chart { position: relative; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); }
   svg { display: block; width: 100%; height: auto; touch-action: none; cursor: grab; }
@@ -135,6 +143,7 @@
     paint-order: stroke; stroke: var(--surface); stroke-width: 4px; stroke-linejoin: round;
   }
 
+  .chart-note { position: absolute; left: 12px; bottom: 8px; margin: 0; font-size: 12px; color: var(--muted); pointer-events: none; }
   .tooltip {
     position: absolute; pointer-events: none; background: var(--surface); color: var(--text);
     border: 1px solid var(--border); border-radius: 8px; padding: 6px 10px; font-size: 12px;
@@ -143,7 +152,6 @@
   .tooltip strong { display: block; }
   .tooltip span { color: var(--text-2); }
 
-  aside { display: flex; flex-direction: column; gap: 16px; }
   .card { border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; background: var(--surface); }
   .card h2 { font-size: 13px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-2); margin: 0 0 8px; }
 
@@ -151,17 +159,19 @@
     background: linear-gradient(90deg, var(--ramp-close), var(--ramp-mid), var(--ramp-far)); }
   .gradient-labels { display: flex; justify-content: space-between; color: var(--text-2); font-size: 12px; }
 
-  .details h3 { font-size: 17px; margin: 0 0 2px; }
+  .details { position: relative; }
+  .details .close { position: absolute; top: 8px; right: 10px; font: inherit; font-size: 18px; line-height: 1; color: var(--text-2); background: none; border: 0; cursor: pointer; padding: 4px; }
+  .details .close:hover { color: var(--text); }
+  .details h3 { font-size: 17px; margin: 0 24px 2px 0; }
   .details h3 a { color: var(--text); text-decoration-color: var(--border); text-underline-offset: 3px; }
   .details .desc { color: var(--text-2); margin: 0 0 8px; }
-  .details .para { margin: 0 0 12px; font-size: 13px; }
+  .details .para { margin: 10px 0 12px; font-size: 13px; }
   .chip { display: inline-block; font-size: 12px; padding: 1px 8px; border-radius: 999px; background: var(--surface-2); border: 1px solid var(--border); }
-  .stats { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin: 10px 0 12px; }
-  .stat { background: var(--surface-2); border-radius: 8px; padding: 6px 10px; }
-  .stat b { display: block; font-size: 16px; font-variant-numeric: tabular-nums; }
-  .stat span { color: var(--text-2); font-size: 12px; }
+  .tags { display: flex; flex-wrap: wrap; gap: 6px; }
+  button.chip { font: inherit; font-size: 12px; color: var(--text); cursor: pointer; }
+  button.chip:hover { border-color: var(--text-2); }
+  button.chip.active { border-color: var(--accent); color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
   .hint { color: var(--text-2); font-size: 13px; margin: 0; }
-  .hint + .hint { margin-top: 8px; }
 
   /* Related-articles table */
   .below { margin-top: 16px; }
@@ -177,6 +187,7 @@
   td.title button { font: inherit; color: var(--text); background: none; border: 0; padding: 0; cursor: pointer; text-align: left; }
   td.title button:hover { text-decoration: underline; }
   td.theme { color: var(--text-2); }
+  td.empty { color: var(--text-2); white-space: normal; }
   tbody tr:hover { background: var(--surface-2); }
   tbody tr:last-child td { border-bottom: 0; }
 
@@ -186,7 +197,7 @@
 <body>
 <header>
   <h1>The Hundred Years' War on Wikipedia</h1>
-  <p class="lede">The 788 articles that the <em>Hundred Years' War</em> article links to, grouped into 12 themes by how they link (Milne–Witten similarity). An article's theme and its closeness to the war are different things: switch views to see both.</p>
+  <p class="lede">The <span id="n-articles"></span> articles that the <em>Hundred Years' War</em> article links to, grouped into <span id="n-themes"></span> themes by how they link (Milne–Witten similarity). <b>Radial:</b> each wedge is a theme, and the closer an article is to the center, the more similar it is to the war. <b>Network:</b> similar articles are pulled together. Combine filters to see which kinds of articles sit closest to the war.</p>
   <div class="controls">
     <div class="toggle" role="group" aria-label="Layout">
       <button type="button" data-view="radial" aria-pressed="true">Radial</button>
@@ -196,29 +207,33 @@
     <datalist id="titles"></datalist>
     <button type="button" class="ghost" id="reset">Reset view</button>
   </div>
-  <div class="filters" id="filters" aria-label="Filters"></div>
+  <div class="stats-bar" id="stats" aria-live="polite"></div>
+  <p class="stats-note" id="stats-note"></p>
 </header>
 
-<main class="layout">
-  <div class="chart">
-    <svg id="graph" viewBox="-480 -410 960 820" role="img" aria-label="Graph of the articles by theme and closeness to the war"></svg>
-    <div class="tooltip" id="tooltip"></div>
-  </div>
-  <aside>
-    <section class="card details" id="details" aria-live="polite"></section>
-    <section class="card">
+<main class="layout" id="layout">
+  <aside class="facets" id="filters" aria-label="Filters">
+    <div class="legend">
       <h2>Color: closeness to the war</h2>
       <div class="gradient"></div>
-      <div class="gradient-labels"><span>most similar (rank 1)</span><span>least (788)</span></div>
-    </section>
+      <div class="gradient-labels"><span>rank 1</span><span id="n-least"></span></div>
+    </div>
   </aside>
+  <div class="center">
+    <section class="card details" id="details" aria-live="polite"></section>
+    <div class="chart">
+      <svg id="graph" viewBox="-480 -410 960 820" role="img" aria-label="Graph of the articles by theme and closeness to the war"></svg>
+      <div class="tooltip" id="tooltip"></div>
+      <p class="chart-note" id="chart-note" hidden>Distances between themes are enlarged for clarity; within a theme, positions are unchanged.</p>
+    </div>
+  </div>
 </main>
 
 <section class="below">
   <div class="card">
     <div class="table-head">
       <h2 id="table-title">Most related articles</h2>
-      <p class="hint">Milne–Witten similarity, 0–1. Across all articles: filters don't apply.</p>
+      <p class="hint" id="table-hint"></p>
     </div>
     <div class="table-wrap">
       <table>
@@ -253,21 +268,42 @@
   const S = 300;               // layout units (−1…1) → SVG units
   const INNER = 0.08;          // must match layout.radial_layout
   const R = 3.6;               // node radius
+  const TOP = 10;              // rows in the related-articles table
+  const FEW = 5;               // below this many articles, averages are flagged as unreliable
   const SEED_LABEL = `${G.seed.title} (Seed)`;
   const clusterById = new Map(G.clusters.map(c => [c.id, c]));
+  const fmt = d3.format(",");
+
+  document.getElementById("n-articles").textContent = fmt(N);
+  document.getElementById("n-themes").textContent = G.clusters.length;
+  document.getElementById("n-least").textContent = `rank ${fmt(N)}`;
 
   for (const c of G.clusters) {
-    const ranks = nodes.filter(n => n.cluster === c.id).map(n => n.rank).sort((a, b) => a - b);
-    c.medianRank = Math.round(d3.median(ranks));
+    c.medianRank = Math.round(d3.median(nodes.filter(n => n.cluster === c.id), n => n.rank));
   }
 
-  const state = { view: "radial", selected: null, zoomK: 1 };
+  // ---- every pair's scores: upper triangle (i < j) in row order, 2-byte integers in base64 ----
+  function decode(b64) {
+    const bin = atob(b64);
+    const bytes = new Uint8Array(bin.length);
+    for (let k = 0; k < bin.length; k++) bytes[k] = bin.charCodeAt(k);
+    return new Uint16Array(bytes.buffer);
+  }
+  const PAIR = {
+    mw: decode(G.pairs.milne_witten), inl: decode(G.pairs.inlink), outl: decode(G.pairs.outlink), scale: G.pairs.scale,
+  };
+  function pairScores(i, j) {
+    const [a, b] = i < j ? [i, j] : [j, i];
+    const k = a * N - (a * (a + 1)) / 2 + (b - a - 1);
+    return { mw: PAIR.mw[k] / PAIR.scale, inl: PAIR.inl[k] / PAIR.scale, outl: PAIR.outl[k] / PAIR.scale };
+  }
+
+  const state = { view: "radial", selected: null, zoomK: 1, ok: nodes.map(() => true), related: [] };
   const xy = (n, view = state.view) => {
     const p = view === "radial" ? n.radial : n.network;
     return [p[0] * S, -p[1] * S];
   };
   const radiusOfRank = rank => (INNER + (1 - INNER) * Math.sqrt(rank / N)) * S;
-  const fmt = d3.format(",");
 
   // ---- small DOM helper ----
   function el(tag, props = {}, ...children) {
@@ -281,21 +317,26 @@
   const FILTERS = [
     {
       key: "theme", label: "Theme",
-      options: G.clusters.map(c => ({ label: c.name, sub: `median rank ${c.medianRank}`, test: n => n.cluster === c.id })),
+      // Closest theme to the war first (lowest median rank).
+      options: [...G.clusters].sort((a, b) => a.medianRank - b.medianRank)
+        .map(c => ({ label: c.name, test: n => n.cluster === c.id })),
     },
     {
       key: "closeness", label: "Closeness to the war",
       options: [[1, 50], [51, 200], [201, 400], [401, N]].map(([a, b]) => ({ label: `Rank ${a}–${b}`, test: n => n.rank >= a && n.rank <= b })),
     },
     {
-      key: "seedlink", label: "Seed's link",
+      // Which sections of the war's article link to it, in page order. An article linked
+      // in several sections matches each of them.
+      key: "section", label: "Where the war's article links to it",
       options: [
-        { label: "Written in the seed's text", test: n => !n.from_template },
-        { label: "Added by a template", sub: "navbox or sidebar", test: n => n.from_template },
+        ...G.sections.map(s => ({ label: s, test: n => n.sections.includes(s) })),
+        { label: "Not in its body text", tag: "Not in the war's body text", sub: "navbox, infobox, captions, references, end sections", test: n => n.channel !== "prose" },
       ],
     },
     {
       key: "back", label: "Links back to the war",
+      tagPrefix: "Links back: ",
       options: [{ label: "Yes", test: n => n.links_to_seed }, { label: "No", test: n => !n.links_to_seed }],
     },
     {
@@ -308,6 +349,7 @@
     },
     {
       key: "bridge", label: "Bridge",
+      tagPrefix: "Bridge: ",
       options: [
         { label: "All 10 nearest in its theme", test: n => n.outside_share === 0 },
         { label: "1–5 of 10 in other themes", test: n => n.outside_share > 0 && n.outside_share <= 0.5 },
@@ -315,59 +357,87 @@
       ],
     },
   ];
-  for (const f of FILTERS) {
-    f.checked = new Set();
-    for (const o of f.options) o.count = nodes.filter(o.test).length;
-  }
-  const anyFilter = () => FILTERS.some(f => f.checked.size > 0);
-  const matches = n => FILTERS.every(f => f.checked.size === 0 || [...f.checked].some(k => f.options[k].test(n)));
+  for (const f of FILTERS) f.checked = new Set();
+  const passes = (f, n) => f.checked.size === 0 || [...f.checked].some(k => f.options[k].test(n));
+  const matches = n => FILTERS.every(f => passes(f, n));
 
-  const filterBar = document.getElementById("filters");
-  const countEl = el("span", { className: "match-count" });
+  const facetBox = document.getElementById("filters");
+  const legend = facetBox.querySelector(".legend");
   for (const f of FILTERS) {
-    const summary = el("summary");
-    const menu = el("div", { className: "menu" });
+    const clear = el("button", { type: "button", textContent: "Clear" });
+    clear.addEventListener("click", () => { f.checked.clear(); f.boxes.forEach(b => (b.checked = false)); onFiltersChange(); });
+    const group = el("section", { className: "facet" }, el("h2", {}, f.label, clear));
+    f.rows = [];
     f.boxes = f.options.map((o, k) => {
       const box = el("input", { type: "checkbox" });
       box.addEventListener("change", () => {
         box.checked ? f.checked.add(k) : f.checked.delete(k);
         onFiltersChange();
       });
-      menu.append(el("label", {}, box,
-        el("span", {}, o.label, o.sub ? el("span", { className: "sub", textContent: o.sub }) : null),
-        el("span", { className: "num", textContent: fmt(o.count) })));
+      const num = el("span", { className: "num" });
+      const row = el("label", {}, box, el("span", {}, o.label, o.sub ? el("span", { className: "sub", textContent: o.sub }) : null), num);
+      f.rows.push({ row, num });
+      group.append(row);
       return box;
     });
-    const clear = el("button", { type: "button", textContent: "Clear" });
-    clear.addEventListener("click", () => { f.checked.clear(); f.boxes.forEach(b => (b.checked = false)); onFiltersChange(); });
-    menu.append(el("div", { className: "menu-foot" }, clear));
-    f.details = el("details", { className: "dd" }, summary, menu);
-    f.summary = summary;
-    // Only one dropdown open at a time.
-    f.details.addEventListener("toggle", () => {
-      if (f.details.open) FILTERS.forEach(g => { if (g !== f) g.details.open = false; });
-    });
-    filterBar.append(f.details);
+    f.group = group;
+    facetBox.insertBefore(group, legend);
   }
-  filterBar.append(countEl);
-  document.addEventListener("click", ev => {
-    if (!ev.target.closest(".dd")) FILTERS.forEach(f => (f.details.open = false));
-  });
 
-  function updateSummaries() {
+  // Count next to each option: how many articles you'd get by also ticking it
+  // (the other filters stay as they are; within its own filter the option counts alone).
+  function updateFacets() {
     for (const f of FILTERS) {
-      const k = [...f.checked];
-      f.summary.textContent = k.length === 0 ? f.label
-        : k.length === 1 ? `${f.label}: ${f.options[k[0]].label}`
-        : `${f.label} · ${k.length}`;
-      f.details.classList.toggle("active", k.length > 0);
+      const base = nodes.filter(n => FILTERS.every(g => g === f || passes(g, n)));
+      f.options.forEach((o, k) => {
+        const c = base.filter(o.test).length;
+        f.rows[k].num.textContent = fmt(c);
+        f.rows[k].row.classList.toggle("zero", c === 0);
+      });
+      f.group.classList.toggle("active", f.checked.size > 0);
     }
-    const shown = nodes.filter(matches).length;
-    countEl.textContent = anyFilter() ? `${fmt(shown)} of ${fmt(N)} articles match` : `${fmt(N)} articles`;
   }
 
   function clearFilters() {
-    for (const f of FILTERS) { f.checked.clear(); f.boxes.forEach(b => (b.checked = false)); f.details.open = false; }
+    for (const f of FILTERS) { f.checked.clear(); f.boxes.forEach(b => (b.checked = false)); }
+  }
+
+  // ---- stats bar: the filtered articles vs all articles, plus the selected article ----
+  const f2 = d3.format(".2f"), f3 = d3.format(".3f"), pct = d3.format(".0%");
+  const STATS = [
+    { label: "Articles", value: s => fmt(s.length), all: () => `of ${fmt(N)}`, sel: () => null },
+    { label: "Median rank vs the war", value: s => fmt(Math.round(d3.median(s, n => n.rank))), sel: n => fmt(n.rank) },
+    { label: "Mean Milne–Witten", value: s => f3(d3.mean(s, n => n.milne_witten)), sel: n => f3(n.milne_witten) },
+    { label: "Mean in-link", value: s => f3(d3.mean(s, n => n.inlink)), sel: n => f3(n.inlink) },
+    { label: "Mean out-link", value: s => f3(d3.mean(s, n => n.outlink)), sel: n => f3(n.outlink) },
+    { label: "Link back to the war", value: s => pct(d3.mean(s, n => (n.links_to_seed ? 1 : 0))), sel: n => (n.links_to_seed ? "yes" : "no") },
+    { label: "Median length (words)", value: s => fmt(Math.round(d3.median(s, n => n.word_count))), sel: n => fmt(n.word_count) },
+    { label: "Themes covered", value: s => `${new Set(s.map(n => n.cluster)).size}`, all: () => `of ${G.clusters.length}`, sel: n => clusterById.get(n.cluster).name },
+  ];
+  const statsBar = document.getElementById("stats");
+  const statsNote = document.getElementById("stats-note");
+  for (const st of STATS) {
+    st.b = el("b");
+    st.allEl = el("span", { className: "all", textContent: st.all ? st.all() : `all: ${st.value(nodes)}` });
+    st.selEl = el("span", { className: "sel" });
+    statsBar.append(el("div", { className: "tile" }, el("span", { className: "lab", textContent: st.label }), st.b, st.allEl, st.selEl));
+  }
+
+  function updateStats() {
+    const subset = nodes.filter((n, i) => state.ok[i]);
+    const sel = typeof state.selected === "number" ? nodes[state.selected] : null;
+    for (const st of STATS) {
+      st.b.textContent = subset.length ? st.value(subset) : "–";
+      const s = sel ? st.sel(sel) : null;
+      st.selEl.textContent = s == null ? "" : `selected: ${s}`;
+      st.selEl.title = st.selEl.textContent;
+    }
+    statsBar.classList.toggle("few", subset.length < FEW);
+    // Only a warning when the subset is too small for averages to mean much.
+    statsNote.textContent = subset.length === 0 ? "No articles match these filters."
+      : subset.length < FEW ? `Only ${subset.length} article${subset.length === 1 ? "" : "s"}: averages this small are unreliable.`
+      : "";
+    statsNote.hidden = statsNote.textContent === "";
   }
 
   // ---- color: closeness (one hue; more contrast with the surface = closer) ----
@@ -390,7 +460,7 @@
   const gNodes = root.append("g");
   const gLabels = root.append("g");
 
-  const rings = [10, 100, 300, 788];
+  const rings = [10, 100, 300, N];
   gScale.selectAll("circle").data(rings).join("circle").attr("class", "ring").attr("r", radiusOfRank);
   gScale.selectAll("text").data(rings).join("text")
     .attr("class", "ring-label").attr("x", 4).attr("y", r => -radiusOfRank(r) - 3).text(r => `rank ${r}`);
@@ -432,17 +502,30 @@
   labelSel.attr("text-anchor", c => labelPos(c).anchor)
     .attr("transform", c => { const p = labelPos(c); return `translate(${p.x},${p.y})`; });
 
+  // ---- the related articles: the TOP most related to the selection, among the filtered articles ----
+  function computeRelated() {
+    const sel = state.selected;
+    const pool = d3.range(N).filter(j => state.ok[j] && j !== sel);
+    if (typeof sel === "number") {
+      state.related = pool.map(j => ({ j, ...pairScores(sel, j) })).sort((a, b) => b.mw - a.mw).slice(0, TOP);
+    } else {
+      state.related = pool.sort((a, b) => nodes[a].rank - nodes[b].rank).slice(0, TOP)
+        .map(j => ({ j, mw: nodes[j].milne_witten, inl: nodes[j].inlink, outl: nodes[j].outlink }));
+    }
+  }
+
   // ---- styling that depends on state ----
   function paint() {
     const sel = state.selected;
-    const near = typeof sel === "number" ? new Set(nodes[sel].neighbors.map(nb => nb[0])) : null;
-    const filtered = anyFilter();
-    const ok = nodes.map(matches);
+    const near = typeof sel === "number" ? new Set(state.related.map(r => r.j)) : null;
+    const filtered = state.ok.some(v => !v);
+    const ok = state.ok;
     nodeSel
       .attr("fill", i => colorOf(nodes[i].rank))
       .attr("fill-opacity", i => {
+        if (i === sel) return 1;
         if (!ok[i]) return 0.08;
-        if (near && i !== sel && !near.has(i)) return 0.35;
+        if (near && !near.has(i)) return 0.35;
         return 1;
       })
       .classed("selected", i => i === sel);
@@ -463,7 +546,7 @@
 
   function drawHighlight() {
     const sel = state.selected;
-    const data = typeof sel === "number" ? nodes[sel].neighbors.map(nb => [sel, nb[0]]) : [];
+    const data = typeof sel === "number" ? state.related.map(r => [sel, r.j]) : [];
     gHl.selectAll("line").data(data).join("line")
       .attr("class", "hl-edge")
       .attr("stroke-width", 1.2)
@@ -471,12 +554,23 @@
       .attr("x2", e => xy(nodes[e[1]])[0]).attr("y2", e => xy(nodes[e[1]])[1]);
   }
 
-  function onFiltersChange() { updateSummaries(); paint(); }
+  function refresh() {
+    state.ok = nodes.map(matches);
+    computeRelated();
+    updateFacets();
+    updateStats();
+    renderTable();
+    paint();
+    // The details card's tags show which filters are ticked.
+    if (typeof state.selected === "number") { renderNode(state.selected); fitChart(); }
+  }
+  const onFiltersChange = refresh;
 
   // ---- view toggle ----
   function setView(view) {
     if (view === state.view) return;
     state.view = view;
+    document.getElementById("chart-note").hidden = view !== "network";
     d3.selectAll(".toggle button").attr("aria-pressed", function () { return this.dataset.view === view; });
     gHl.selectAll("line").remove();
     const t = svg.transition().duration(900).ease(d3.easeCubicInOut);
@@ -535,66 +629,89 @@
     .on("click", ev => { ev.stopPropagation(); select("seed"); });
   svg.on("click", () => { if (state.selected !== null) select(null); });
 
-  // ---- side panel ----
+  // ---- details panel: only while an article (or the seed) is selected ----
+  const layoutEl = document.getElementById("layout");
   const details = document.getElementById("details");
   const wiki = title => "https://en.wikipedia.org/wiki/" + encodeURIComponent(title.replaceAll(" ", "_"));
-  const stat = (value, label) => el("div", { className: "stat" }, el("b", { textContent: value }), el("span", { textContent: label }));
-
-  function renderIntro() {
-    details.replaceChildren(
-      el("h2", { textContent: "How to read it" }),
-      el("p", { className: "hint", innerHTML: "<b>Radial:</b> the war sits at the center. Each wedge is a theme, and the closer an article is to the center, the more similar it is to the war." }),
-      el("p", { className: "hint", innerHTML: "<b>Network:</b> similar articles are pulled together, so themes become regions. Watch an article move between views: its theme stays, its closeness changes." }),
-      el("p", { className: "hint", textContent: "Click an article for details, use the filters to narrow the articles down, scroll to zoom." }),
-    );
+  function closeButton() {
+    const b = el("button", { type: "button", className: "close", textContent: "×", ariaLabel: "Close details" });
+    b.addEventListener("click", () => select(null));
+    return b;
   }
 
   function renderSeed() {
     details.replaceChildren(
+      closeButton(),
       el("h3", {}, el("a", { href: wiki(G.seed.title), target: "_blank", rel: "noopener", textContent: G.seed.title })),
       el("p", { className: "desc", textContent: G.seed.shortdesc }),
       el("span", { className: "chip", textContent: "the seed" }),
-      el("p", { className: "para", style: "margin-top: 10px", textContent: G.seed.paragraph }),
-      el("p", { className: "hint", textContent: `Every one of the ${N} articles is here because this article links to it. Ranks measure each one's similarity to it.` }),
+      el("p", { className: "para", textContent: G.seed.paragraph }),
+      el("p", { className: "hint", textContent: `Every one of the ${fmt(N)} articles is here because this article links to it. Ranks measure each one's similarity to it.` }),
     );
+  }
+
+  const CHANNEL_TEXT = {
+    "added by template": "a navbox, sidebar or other template",
+    "infobox": "the infobox", "caption": "an image caption", "table": "a table",
+    "reference": "a citation", "footnote": "a footnote", "other template": "a template", "end section": "See also, Further reading or similar",
+  };
+
+  // One tag per filter option the article matches. Tags of ticked options are highlighted;
+  // clicking a tag ticks or unticks that option.
+  function filterTags(n) {
+    const tags = [];
+    for (const f of FILTERS) {
+      f.options.forEach((o, k) => {
+        if (!o.test(n)) return;
+        const b = el("button", {
+          type: "button", className: "chip" + (f.checked.has(k) ? " active" : ""),
+          textContent: (f.tagPrefix || "") + (o.tag || o.label),
+          title: f.checked.has(k) ? `Remove the filter "${f.label}: ${o.label}"` : `Filter by "${f.label}: ${o.label}"`,
+        });
+        b.addEventListener("click", () => {
+          f.checked.has(k) ? f.checked.delete(k) : f.checked.add(k);
+          f.boxes[k].checked = f.checked.has(k);
+          onFiltersChange();
+        });
+        tags.push(b);
+      });
+    }
+    return el("div", { className: "tags" }, ...tags);
   }
 
   function renderNode(i) {
     const n = nodes[i];
     const outside = Math.round(n.outside_share * 10);
     details.replaceChildren(
+      closeButton(),
       el("h3", {}, el("a", { href: wiki(n.title), target: "_blank", rel: "noopener", textContent: n.title })),
       n.shortdesc ? el("p", { className: "desc", textContent: n.shortdesc }) : null,
-      el("span", { className: "chip", textContent: clusterById.get(n.cluster).name }),
-      el("div", { className: "stats" },
-        stat(`${n.rank} / ${N}`, "rank in similarity to the war"),
-        stat(n.milne_witten.toFixed(2), "Milne–Witten vs the war"),
-        stat(fmt(n.word_count), "words"),
-        stat(n.links_to_seed ? "Yes" : "No", "links back to the war"),
-      ),
+      filterTags(n),
       n.paragraph ? el("p", { className: "para", textContent: n.paragraph }) : null,
       el("p", { className: "hint", textContent: (outside === 0
         ? "All 10 of its most similar articles are in the same theme."
         : `${outside} of its 10 most similar articles are in other themes${outside >= 6 ? ": a bridge between themes." : "."}`)
-        + (n.from_template ? " The seed links to it through a template." : " The seed links to it in its own text.") }),
+        + (n.channel === "prose"
+          ? ` The war's article links to it in: ${n.sections.join(", ")}.`
+          : ` The war's article links to it only outside its body text (${CHANNEL_TEXT[n.channel] || n.channel}).`)
+        + (state.ok[i] ? "" : " It doesn't match the current filters.") }),
     );
   }
 
-  // ---- related-articles table ----
+  // ---- related-articles table (follows the filters) ----
   const tableTitle = document.getElementById("table-title");
+  const tableHint = document.getElementById("table-hint");
   const related = document.getElementById("related");
   function renderTable() {
     const sel = state.selected;
-    let rows;
-    if (typeof sel === "number") {
-      tableTitle.textContent = `Most related to ${nodes[sel].title}`;
-      rows = nodes[sel].neighbors.map(([j, mw, inl, outl]) => ({ j, mw, inl, outl }));
-    } else {
-      tableTitle.textContent = `Most related to ${G.seed.title} (the seed)`;
-      rows = d3.range(N).sort((a, b) => nodes[a].rank - nodes[b].rank).slice(0, 10)
-        .map(j => ({ j, mw: nodes[j].milne_witten, inl: nodes[j].inlink, outl: nodes[j].outlink }));
+    const filtered = state.ok.some(v => !v);
+    tableTitle.textContent = typeof sel === "number" ? `Most related to ${nodes[sel].title}` : `Most related to ${G.seed.title} (the seed)`;
+    tableHint.textContent = `Milne–Witten similarity, 0–1. ${filtered ? "Among the filtered articles." : `Among all ${fmt(N)} articles.`}`;
+    if (state.related.length === 0) {
+      related.replaceChildren(el("tr", {}, el("td", { className: "empty", colSpan: 7, textContent: "No other articles match these filters." })));
+      return;
     }
-    related.replaceChildren(...rows.map((r, k) => {
+    related.replaceChildren(...state.related.map((r, k) => {
       const m = nodes[r.j];
       const btn = el("button", { type: "button", textContent: m.title });
       btn.addEventListener("click", () => { select(r.j); centerOn(r.j); });
@@ -609,11 +726,26 @@
     }));
   }
 
+  // The details card sits above the graph. While it shows, the graph gets shorter (same width)
+  // so the two together take the height the graph alone would.
+  const VIEW_W = 960, VIEW_H = 820, MIN_H = 320;
+  function fitChart() {
+    const natural = chart.clientWidth * VIEW_H / VIEW_W;
+    const shown = layoutEl.classList.contains("has-details");
+    const h = shown ? Math.max(MIN_H, natural - details.offsetHeight - 12) : natural;
+    svg.style("height", `${Math.round(h)}px`);
+  }
+  new ResizeObserver(fitChart).observe(chart);
+
   function select(i) {
     state.selected = i;
-    if (i === null) renderIntro();
-    else if (i === "seed") renderSeed();
-    else renderNode(i);
+    layoutEl.classList.toggle("has-details", i !== null);
+    if (i === "seed") renderSeed();
+    else if (i !== null) renderNode(i);
+    else details.replaceChildren();
+    fitChart();
+    computeRelated();
+    updateStats();
     renderTable();
     paint();
   }
@@ -640,22 +772,18 @@
   // ---- reset: zoom, filters, selection and search ----
   function resetAll() {
     clearFilters();
-    updateSummaries();
     search.value = "";
+    state.selected = null;
+    refresh();
     select(null);
     svg.transition().duration(600).call(zoom.transform, d3.zoomIdentity);
   }
   document.getElementById("reset").addEventListener("click", resetAll);
-  document.addEventListener("keydown", ev => {
-    if (ev.key !== "Escape") return;
-    const open = FILTERS.find(f => f.details.open);
-    if (open) open.details.open = false;
-    else select(null);
-  });
+  document.addEventListener("keydown", ev => { if (ev.key === "Escape") select(null); });
 
   window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => { setColors(); paint(); });
 
-  updateSummaries();
+  refresh();
   select(null);
 })();
 </script>
