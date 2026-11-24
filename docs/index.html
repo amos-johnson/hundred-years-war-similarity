@@ -91,15 +91,15 @@
   .tile .all { color: var(--muted); }
   .tile .sel { color: var(--accent); }
   .stats-bar.few .tile:not(:first-child) b { color: var(--muted); }
-  .stats-note { color: var(--text-2); font-size: 12px; margin: 6px 0 14px; min-height: 1.5em; }
-  .stats-note .warn { color: var(--text); font-weight: 600; }
+  .stats-bar { margin-bottom: 14px; }
+  .stats-note { color: var(--text); font-weight: 600; font-size: 12px; margin: -6px 0 14px; }
 
-  /* Layout: filters | graph | details (only when an article is selected) */
+  /* Layout: filters | details (only when an article is selected) above the graph */
   .layout { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 16px; align-items: start; }
-  .layout.has-details { grid-template-columns: 220px minmax(0, 1fr) 320px; }
+  .center { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
   .layout:not(.has-details) #details { display: none; }
   @media (max-width: 960px) {
-    .layout, .layout.has-details { grid-template-columns: minmax(0, 1fr); }
+    .layout { grid-template-columns: minmax(0, 1fr); }
   }
 
   /* Filters: always-open checkbox lists with live counts */
@@ -143,6 +143,7 @@
     paint-order: stroke; stroke: var(--surface); stroke-width: 4px; stroke-linejoin: round;
   }
 
+  .chart-note { position: absolute; left: 12px; bottom: 8px; margin: 0; font-size: 12px; color: var(--muted); pointer-events: none; }
   .tooltip {
     position: absolute; pointer-events: none; background: var(--surface); color: var(--text);
     border: 1px solid var(--border); border-radius: 8px; padding: 6px 10px; font-size: 12px;
@@ -166,6 +167,10 @@
   .details .desc { color: var(--text-2); margin: 0 0 8px; }
   .details .para { margin: 10px 0 12px; font-size: 13px; }
   .chip { display: inline-block; font-size: 12px; padding: 1px 8px; border-radius: 999px; background: var(--surface-2); border: 1px solid var(--border); }
+  .tags { display: flex; flex-wrap: wrap; gap: 6px; }
+  button.chip { font: inherit; font-size: 12px; color: var(--text); cursor: pointer; }
+  button.chip:hover { border-color: var(--text-2); }
+  button.chip.active { border-color: var(--accent); color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
   .hint { color: var(--text-2); font-size: 13px; margin: 0; }
 
   /* Related-articles table */
@@ -214,11 +219,14 @@
       <div class="gradient-labels"><span>rank 1</span><span id="n-least"></span></div>
     </div>
   </aside>
-  <div class="chart">
-    <svg id="graph" viewBox="-480 -410 960 820" role="img" aria-label="Graph of the articles by theme and closeness to the war"></svg>
-    <div class="tooltip" id="tooltip"></div>
+  <div class="center">
+    <section class="card details" id="details" aria-live="polite"></section>
+    <div class="chart">
+      <svg id="graph" viewBox="-480 -410 960 820" role="img" aria-label="Graph of the articles by theme and closeness to the war"></svg>
+      <div class="tooltip" id="tooltip"></div>
+      <p class="chart-note" id="chart-note" hidden>Distances between themes are enlarged for clarity; within a theme, positions are unchanged.</p>
+    </div>
   </div>
-  <section class="card details" id="details" aria-live="polite"></section>
 </main>
 
 <section class="below">
@@ -309,21 +317,26 @@
   const FILTERS = [
     {
       key: "theme", label: "Theme",
-      options: G.clusters.map(c => ({ label: c.name, test: n => n.cluster === c.id })),
+      // Closest theme to the war first (lowest median rank).
+      options: [...G.clusters].sort((a, b) => a.medianRank - b.medianRank)
+        .map(c => ({ label: c.name, test: n => n.cluster === c.id })),
     },
     {
       key: "closeness", label: "Closeness to the war",
       options: [[1, 50], [51, 200], [201, 400], [401, N]].map(([a, b]) => ({ label: `Rank ${a}–${b}`, test: n => n.rank >= a && n.rank <= b })),
     },
     {
-      key: "seedlink", label: "Seed's link",
+      // Which sections of the war's article link to it, in page order. An article linked
+      // in several sections matches each of them.
+      key: "section", label: "Where the war's article links to it",
       options: [
-        { label: "Written in the seed's text", test: n => !n.from_template },
-        { label: "Added by a template", sub: "navbox or sidebar", test: n => n.from_template },
+        ...G.sections.map(s => ({ label: s, test: n => n.sections.includes(s) })),
+        { label: "Not in its body text", tag: "Not in the war's body text", sub: "navbox, infobox, captions, references, end sections", test: n => n.channel !== "prose" },
       ],
     },
     {
       key: "back", label: "Links back to the war",
+      tagPrefix: "Links back: ",
       options: [{ label: "Yes", test: n => n.links_to_seed }, { label: "No", test: n => !n.links_to_seed }],
     },
     {
@@ -336,6 +349,7 @@
     },
     {
       key: "bridge", label: "Bridge",
+      tagPrefix: "Bridge: ",
       options: [
         { label: "All 10 nearest in its theme", test: n => n.outside_share === 0 },
         { label: "1–5 of 10 in other themes", test: n => n.outside_share > 0 && n.outside_share <= 0.5 },
@@ -419,11 +433,11 @@
       st.selEl.title = st.selEl.textContent;
     }
     statsBar.classList.toggle("few", subset.length < FEW);
-    const parts = [];
-    if (subset.length === 0) parts.push(el("span", { className: "warn", textContent: "No articles match these filters. " }));
-    else if (subset.length < FEW) parts.push(el("span", { className: "warn", textContent: `Only ${subset.length} article${subset.length === 1 ? "" : "s"}: averages this small are unreliable. ` }));
-    parts.push(`Scores are vs the war: big numbers in each box are for the ${subset.length === N ? "articles shown (all of them)" : "filtered articles"}, gray for all ${fmt(N)}${sel ? `, blue for ${sel.title}` : ""}.`);
-    statsNote.replaceChildren(...parts);
+    // Only a warning when the subset is too small for averages to mean much.
+    statsNote.textContent = subset.length === 0 ? "No articles match these filters."
+      : subset.length < FEW ? `Only ${subset.length} article${subset.length === 1 ? "" : "s"}: averages this small are unreliable.`
+      : "";
+    statsNote.hidden = statsNote.textContent === "";
   }
 
   // ---- color: closeness (one hue; more contrast with the surface = closer) ----
@@ -547,6 +561,8 @@
     updateStats();
     renderTable();
     paint();
+    // The details card's tags show which filters are ticked.
+    if (typeof state.selected === "number") { renderNode(state.selected); fitChart(); }
   }
   const onFiltersChange = refresh;
 
@@ -554,6 +570,7 @@
   function setView(view) {
     if (view === state.view) return;
     state.view = view;
+    document.getElementById("chart-note").hidden = view !== "network";
     d3.selectAll(".toggle button").attr("aria-pressed", function () { return this.dataset.view === view; });
     gHl.selectAll("line").remove();
     const t = svg.transition().duration(900).ease(d3.easeCubicInOut);
@@ -633,6 +650,35 @@
     );
   }
 
+  const CHANNEL_TEXT = {
+    "added by template": "a navbox, sidebar or other template",
+    "infobox": "the infobox", "caption": "an image caption", "table": "a table",
+    "reference": "a citation", "footnote": "a footnote", "other template": "a template", "end section": "See also, Further reading or similar",
+  };
+
+  // One tag per filter option the article matches. Tags of ticked options are highlighted;
+  // clicking a tag ticks or unticks that option.
+  function filterTags(n) {
+    const tags = [];
+    for (const f of FILTERS) {
+      f.options.forEach((o, k) => {
+        if (!o.test(n)) return;
+        const b = el("button", {
+          type: "button", className: "chip" + (f.checked.has(k) ? " active" : ""),
+          textContent: (f.tagPrefix || "") + (o.tag || o.label),
+          title: f.checked.has(k) ? `Remove the filter "${f.label}: ${o.label}"` : `Filter by "${f.label}: ${o.label}"`,
+        });
+        b.addEventListener("click", () => {
+          f.checked.has(k) ? f.checked.delete(k) : f.checked.add(k);
+          f.boxes[k].checked = f.checked.has(k);
+          onFiltersChange();
+        });
+        tags.push(b);
+      });
+    }
+    return el("div", { className: "tags" }, ...tags);
+  }
+
   function renderNode(i) {
     const n = nodes[i];
     const outside = Math.round(n.outside_share * 10);
@@ -640,12 +686,14 @@
       closeButton(),
       el("h3", {}, el("a", { href: wiki(n.title), target: "_blank", rel: "noopener", textContent: n.title })),
       n.shortdesc ? el("p", { className: "desc", textContent: n.shortdesc }) : null,
-      el("span", { className: "chip", textContent: clusterById.get(n.cluster).name }),
+      filterTags(n),
       n.paragraph ? el("p", { className: "para", textContent: n.paragraph }) : null,
       el("p", { className: "hint", textContent: (outside === 0
         ? "All 10 of its most similar articles are in the same theme."
         : `${outside} of its 10 most similar articles are in other themes${outside >= 6 ? ": a bridge between themes." : "."}`)
-        + (n.from_template ? " The seed links to it through a template." : " The seed links to it in its own text.")
+        + (n.channel === "prose"
+          ? ` The war's article links to it in: ${n.sections.join(", ")}.`
+          : ` The war's article links to it only outside its body text (${CHANNEL_TEXT[n.channel] || n.channel}).`)
         + (state.ok[i] ? "" : " It doesn't match the current filters.") }),
     );
   }
@@ -678,12 +726,24 @@
     }));
   }
 
+  // The details card sits above the graph. While it shows, the graph gets shorter (same width)
+  // so the two together take the height the graph alone would.
+  const VIEW_W = 960, VIEW_H = 820, MIN_H = 320;
+  function fitChart() {
+    const natural = chart.clientWidth * VIEW_H / VIEW_W;
+    const shown = layoutEl.classList.contains("has-details");
+    const h = shown ? Math.max(MIN_H, natural - details.offsetHeight - 12) : natural;
+    svg.style("height", `${Math.round(h)}px`);
+  }
+  new ResizeObserver(fitChart).observe(chart);
+
   function select(i) {
     state.selected = i;
     layoutEl.classList.toggle("has-details", i !== null);
     if (i === "seed") renderSeed();
     else if (i !== null) renderNode(i);
     else details.replaceChildren();
+    fitChart();
     computeRelated();
     updateStats();
     renderTable();
