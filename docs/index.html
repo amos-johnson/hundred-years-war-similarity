@@ -108,7 +108,41 @@
   .stats-note { color: var(--text); font-weight: 600; font-size: 12px; margin: -6px 0 14px; }
 
   /* Layout: filters | details (only when an article is selected) above the graph */
-  .layout { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 16px; align-items: start; }
+  .layout { display: grid; grid-template-columns: 230px minmax(0, 1fr); gap: 16px; align-items: start; }
+  .layout.filters-hidden { grid-template-columns: minmax(0, 1fr); }
+  .layout.filters-hidden #filters { display: none; }
+
+  /* Top bar: Filters button, title, tabs to the notebooks */
+  .topbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; margin-bottom: 4px; }
+  .topbar h1 { margin: 0; }
+  .filters-btn {
+    font: inherit; font-size: 13px; color: var(--text); background: var(--surface); cursor: pointer;
+    border: 1px solid var(--border); border-radius: 8px; padding: 5px 10px; display: inline-flex; align-items: center; gap: 6px;
+  }
+  .filters-btn[aria-expanded="true"] { background: var(--surface-2); }
+  .filters-count { color: var(--accent); font-weight: 600; font-variant-numeric: tabular-nums; }
+  .tabs { display: flex; flex-wrap: wrap; gap: 2px; margin-left: auto; }
+  .tabs a {
+    color: var(--text-2); text-decoration: none; font-size: 13px; padding: 5px 10px; border-radius: 8px; white-space: nowrap;
+  }
+  .tabs a:hover { color: var(--text); background: var(--surface-2); }
+  .tabs a[aria-current="page"] { color: var(--text); background: var(--surface-2); font-weight: 600; }
+
+  /* Dropdown filters (Theme, Article type) */
+  .dd { position: relative; }
+  .dd > summary {
+    list-style: none; cursor: pointer; user-select: none; display: flex; justify-content: space-between; align-items: center; gap: 6px;
+    border: 1px solid var(--border); border-radius: 8px; padding: 5px 10px; color: var(--text-2); font-size: 13px;
+  }
+  .dd > summary::-webkit-details-marker { display: none; }
+  .dd > summary::after { content: "▾"; font-size: 10px; color: var(--muted); }
+  .dd > summary span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .facet.active .dd > summary { color: var(--text); border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+  .dd .menu {
+    position: absolute; z-index: 15; top: calc(100% + 4px); left: 0; width: min(320px, calc(100vw - 32px));
+    max-height: 380px; overflow-y: auto; background: var(--surface); border: 1px solid var(--border);
+    border-radius: 10px; box-shadow: var(--shadow); padding: 6px 12px;
+  }
   .center { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
   .layout:not(.has-details) #details { display: none; }
   @media (max-width: 960px) {
@@ -210,7 +244,20 @@
 </head>
 <body>
 <header>
-  <h1>The Hundred Years' War on Wikipedia</h1>
+  <div class="topbar">
+    <button type="button" class="filters-btn" id="filters-btn" aria-controls="filters" aria-expanded="true">
+      <span aria-hidden="true">☰</span> Filters <span class="filters-count" id="filters-count"></span>
+    </button>
+    <h1>The Hundred Years' War on Wikipedia</h1>
+    <nav class="tabs" aria-label="Pages">
+      <a href="index.html" aria-current="page">Graph</a>
+      <a href="story/1_data.html">1 · Data</a>
+      <a href="story/2_similarity.html">2 · Similarity</a>
+      <a href="story/3_themes.html">3 · Themes</a>
+      <a href="story/4_types.html">4 · Types</a>
+      <a href="story/5_search.html">5 · Search</a>
+    </nav>
+  </div>
   <p class="lede">The <span id="n-articles"></span> articles that the <em>Hundred Years' War</em> article links to, grouped into <span id="n-themes"></span> themes by how they link (Milne–Witten similarity). <b>Radial:</b> each wedge is a theme, and the closer an article is to the center, the more similar it is to the war. <b>Network:</b> similar articles are pulled together. Combine filters to see which kinds of articles sit closest to the war.</p>
   <div class="controls">
     <div class="toggle" role="group" aria-label="Layout">
@@ -339,6 +386,7 @@
   const FILTERS = [
     {
       key: "theme", label: "Theme",
+      dropdown: true,
       // Closest theme to the war first (lowest median rank).
       options: [...G.clusters].sort((a, b) => a.medianRank - b.medianRank)
         .map(c => ({ label: c.name, test: n => n.cluster === c.id })),
@@ -346,6 +394,7 @@
     {
       // Step 5: hand-labeled for some articles, predicted from text for the rest. Closest type first.
       key: "type", label: "Article type",
+      dropdown: true,
       note: `Hand-labeled for ${fmt(nodes.filter(n => !n.type_predicted).length)} articles, predicted from their text for the rest.`,
       tagSuffix: n => (n.type_predicted ? " (predicted)" : ""),
       options: TYPES.map(t => ({ label: t[0].toUpperCase() + t.slice(1), test: n => n.type === t })),
@@ -407,6 +456,17 @@
     clear.addEventListener("click", () => { f.checked.clear(); f.boxes.forEach(b => (b.checked = false)); onFiltersChange(); });
     const group = el("section", { className: "facet" }, el("h2", {}, f.label, clear),
       f.note ? el("p", { className: "facet-note", textContent: f.note }) : null);
+    // Theme and Article type are long lists: show them as dropdowns. The rest stay as checkbox lists.
+    let target = group;
+    if (f.dropdown) {
+      f.summary = el("span");
+      target = el("div", { className: "menu" });
+      f.details = el("details", { className: "dd" }, el("summary", {}, f.summary), target);
+      f.details.addEventListener("toggle", () => {
+        if (f.details.open) FILTERS.forEach(g => { if (g !== f && g.details) g.details.open = false; });
+      });
+      group.append(f.details);
+    }
     f.rows = [];
     f.boxes = f.options.map((o, k) => {
       const box = el("input", { type: "checkbox" });
@@ -417,12 +477,29 @@
       const num = el("span", { className: "num" });
       const row = el("label", {}, box, el("span", {}, o.label, o.sub ? el("span", { className: "sub", textContent: o.sub }) : null), num);
       f.rows.push({ row, num });
-      group.append(row);
+      target.append(row);
       return box;
     });
     f.group = group;
     facetBox.insertBefore(group, legend);
   }
+  // Close an open dropdown when clicking elsewhere.
+  document.addEventListener("click", ev => {
+    if (!ev.target.closest(".dd")) FILTERS.forEach(f => { if (f.details) f.details.open = false; });
+  });
+
+  // ---- the filter pane: shown or hidden with the Filters button (remembered per browser) ----
+  const layoutPane = document.getElementById("layout");
+  const filtersBtn = document.getElementById("filters-btn");
+  function showFilters(show) {
+    layoutPane.classList.toggle("filters-hidden", !show);
+    filtersBtn.setAttribute("aria-expanded", String(show));
+    try { localStorage.setItem("filters-open", show ? "1" : "0"); } catch (e) { /* storage unavailable */ }
+  }
+  let savedOpen = null;
+  try { savedOpen = localStorage.getItem("filters-open"); } catch (e) { /* storage unavailable */ }
+  showFilters(savedOpen === null ? window.innerWidth > 960 : savedOpen === "1");
+  filtersBtn.addEventListener("click", () => showFilters(layoutPane.classList.contains("filters-hidden")));
 
   // Count next to each option: how many articles you'd get by also ticking it
   // (the other filters stay as they are; within its own filter the option counts alone).
@@ -435,7 +512,15 @@
         f.rows[k].row.classList.toggle("zero", c === 0);
       });
       f.group.classList.toggle("active", f.checked.size > 0);
+      if (f.dropdown) {
+        const k = [...f.checked];
+        f.summary.textContent = k.length === 0 ? `All (${f.options.length})`
+          : k.length === 1 ? f.options[k[0]].label : `${k.length} selected`;
+      }
     }
+    // Number of ticked options, on the Filters button (so hidden filters stay visible).
+    const ticked = FILTERS.reduce((sum, f) => sum + f.checked.size, 0);
+    document.getElementById("filters-count").textContent = ticked ? `(${ticked})` : "";
   }
 
   function clearFilters() {
