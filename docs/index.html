@@ -119,6 +119,7 @@
   .facet input { accent-color: var(--accent); margin: 2px 0 0; }
   .facet .num { color: var(--text-2); font-size: 12px; font-variant-numeric: tabular-nums; text-align: right; }
   .facet .sub { display: block; color: var(--muted); font-size: 11px; }
+  .facet-note { color: var(--muted); font-size: 11px; margin: 0 0 4px; line-height: 1.4; }
   .facet label.zero:not(:has(input:checked)) { color: var(--muted); }
   .legend { border-top: 1px solid var(--border); padding-top: 12px; }
   .legend h2 { font-size: 13px; margin: 0; }
@@ -313,6 +314,11 @@
     return e;
   }
 
+  // Article types, closest to the war first (lowest median rank).
+  const TYPES = [...new Set(nodes.map(n => n.type))]
+    .map(t => ({ t, median: d3.median(nodes.filter(n => n.type === t), n => n.rank) }))
+    .sort((a, b) => a.median - b.median).map(d => d.t);
+
   // ---- filters: within a filter any checked option matches; across filters all must match ----
   const FILTERS = [
     {
@@ -320,6 +326,13 @@
       // Closest theme to the war first (lowest median rank).
       options: [...G.clusters].sort((a, b) => a.medianRank - b.medianRank)
         .map(c => ({ label: c.name, test: n => n.cluster === c.id })),
+    },
+    {
+      // Step 5: hand-labeled for some articles, predicted from text for the rest. Closest type first.
+      key: "type", label: "Article type",
+      note: `Hand-labeled for ${fmt(nodes.filter(n => !n.type_predicted).length)} articles, predicted from their text for the rest.`,
+      tagSuffix: n => (n.type_predicted ? " (predicted)" : ""),
+      options: TYPES.map(t => ({ label: t[0].toUpperCase() + t.slice(1), test: n => n.type === t })),
     },
     {
       key: "closeness", label: "Closeness to the war",
@@ -366,7 +379,8 @@
   for (const f of FILTERS) {
     const clear = el("button", { type: "button", textContent: "Clear" });
     clear.addEventListener("click", () => { f.checked.clear(); f.boxes.forEach(b => (b.checked = false)); onFiltersChange(); });
-    const group = el("section", { className: "facet" }, el("h2", {}, f.label, clear));
+    const group = el("section", { className: "facet" }, el("h2", {}, f.label, clear),
+      f.note ? el("p", { className: "facet-note", textContent: f.note }) : null);
     f.rows = [];
     f.boxes = f.options.map((o, k) => {
       const box = el("input", { type: "checkbox" });
@@ -665,7 +679,7 @@
         if (!o.test(n)) return;
         const b = el("button", {
           type: "button", className: "chip" + (f.checked.has(k) ? " active" : ""),
-          textContent: (f.tagPrefix || "") + (o.tag || o.label),
+          textContent: (f.tagPrefix || "") + (o.tag || o.label) + (f.tagSuffix ? f.tagSuffix(n) : ""),
           title: f.checked.has(k) ? `Remove the filter "${f.label}: ${o.label}"` : `Filter by "${f.label}: ${o.label}"`,
         });
         b.addEventListener("click", () => {
