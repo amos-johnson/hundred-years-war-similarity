@@ -72,8 +72,21 @@
     border: 0; background: transparent; color: var(--text-2); padding: 6px 14px; font: inherit; cursor: pointer;
   }
   .toggle button[aria-pressed="true"] { background: var(--text); color: var(--surface); }
+  .search-box { position: relative; flex: 1 1 260px; max-width: 420px; min-width: 0; }
+  .results {
+    position: absolute; z-index: 20; top: calc(100% + 4px); left: 0; right: 0; margin: 0; padding: 4px; list-style: none;
+    background: var(--surface); border: 1px solid var(--border); border-radius: 10px; box-shadow: var(--shadow);
+    max-height: 70vh; overflow-y: auto;
+  }
+  .results li { padding: 6px 8px; border-radius: 6px; cursor: pointer; font-size: 13px; line-height: 1.4; }
+  .results li:hover, .results li.active { background: var(--surface-2); }
+  .results .r-title { font-weight: 600; }
+  .results .r-meta { color: var(--muted); font-size: 11px; margin-left: 6px; font-variant-numeric: tabular-nums; }
+  .results .r-snip { display: block; color: var(--text-2); font-size: 12px; }
+  .results mark { background: none; color: var(--accent); font-weight: 600; }
+  .results .r-none { color: var(--text-2); cursor: default; }
   input[type="search"] {
-    font: inherit; color: var(--text); background: var(--surface); min-width: 0; flex: 1 1 220px; max-width: 340px;
+    font: inherit; color: var(--text); background: var(--surface); min-width: 0; width: 100%;
     border: 1px solid var(--border); border-radius: 8px; padding: 6px 10px;
   }
   .ghost {
@@ -204,8 +217,10 @@
       <button type="button" data-view="radial" aria-pressed="true">Radial</button>
       <button type="button" data-view="network" aria-pressed="false">Network</button>
     </div>
-    <input type="search" id="search" list="titles" placeholder="Find an article…" aria-label="Find an article">
-    <datalist id="titles"></datalist>
+    <div class="search-box">
+      <input type="search" id="search" placeholder="Search articles (BM25)…" aria-label="Search articles" autocomplete="off">
+      <ul class="results" id="results" hidden></ul>
+    </div>
     <button type="button" class="ghost" id="reset">Reset view</button>
   </div>
   <div class="stats-bar" id="stats" aria-live="polite"></div>
@@ -260,6 +275,7 @@
 </footer>
 
 <script src="data.js"></script>
+<script src="search.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
 <script>
 (() => {
@@ -768,25 +784,99 @@
   const norm = s => s.toLowerCase().replace(/[’']/g, "").trim();
   const byTitle = new Map(nodes.map((n, i) => [norm(n.title), i]));
   const seedKeys = new Set([norm(SEED_LABEL), norm(G.seed.title), norm(`${G.seed.title} (seed)`)]);
-  const datalist = document.getElementById("titles");
-  datalist.append(el("option", { value: SEED_LABEL }));
-  for (const n of [...nodes].sort((a, b) => a.title.localeCompare(b.title))) datalist.append(el("option", { value: n.title }));
-  const search = document.getElementById("search");
-  function find() {
-    const q = norm(search.value);
-    if (!q) return;
-    if (seedKeys.has(q) || q === "seed") { select("seed"); if (state.view === "radial") centerOn("seed"); return; }
-    let i = byTitle.get(q);
-    if (i === undefined) i = nodes.findIndex(n => norm(n.title).includes(q));
-    if (i >= 0) { select(i); centerOn(i); }
+  // BM25, as in notebooks/06_search.ipynb (Info 202 HW4): same tokenizer, same formula, k1 = 1.2, b = 0.75.
+  // The index (postings, document lengths, avgdl) comes from that notebook via docs/search.js.
+  const SX = window.SEARCH;
+  const TOKEN_RE = /[a-z0-9]+(?:'[a-z]+)?/g;
+  const tokenize = text => text.toLowerCase().match(TOKEN_RE) || [];
+
+  function bm25(query, k1 = 1.2, b = 0.75) {
+    const scores = new Float64Array(SX.N);
+    for (const word of new Set(tokenize(query))) {
+      if (!Object.hasOwn(SX.postings, word)) continue;
+      const [docIds, tfs] = SX.postings[word];
+      const idf = Math.log(SX.N / docIds.length);
+      docIds.forEach((d, k) => {
+        const lengthNorm = k1 * (1 - b + b * SX.length[d] / SX.avgdl);
+        scores[d] += idf * (tfs[k] * (k1 + 1)) / (tfs[k] + lengthNorm);
+      });
+    }
+    return scores;
   }
-  search.addEventListener("change", find);
-  search.addEventListener("keydown", ev => { if (ev.key === "Enter") find(); });
+
+  // Search documents → page items: an article index, or "seed".
+  const pageItem = SX.titles.map(t => (t === G.seed.title ? "seed" : byTitle.get(norm(t))));
+
+  function snippet(text, query, width = 130) {
+    const words = [...new Set(tokenize(query))].map(w => w.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"));
+    const pattern = new RegExp(`\\b(${words.join("|")})\\b`, "gi");
+    const m = text.search(pattern);
+    const start = m < 0 ? 0 : Math.max(0, m - Math.floor(width / 3));
+    const part = esc(text.slice(start, start + width)).replace(pattern, "<mark>$1</mark>");
+    return (start ? "…" : "") + part + (start + width < text.length ? "…" : "");
+  }
+
+  const search = document.getElementById("search");
+  const resultsEl = document.getElementById("results");
+  let results = [];
+
+  // The top results: an exact title match first (as before), then BM25 order.
+  function runSearch() {
+    const raw = search.value.trim();
+    const q = norm(raw);
+    results = [];
+    if (!q) { resultsEl.hidden = true; return; }
+    if (seedKeys.has(q) || q === "seed") results.push({ item: "seed", score: null });
+    else if (byTitle.has(q)) results.push({ item: byTitle.get(q), score: null });
+    const scores = bm25(raw);
+    const ranked = d3.range(SX.N).filter(d => scores[d] > 0).sort((a, b) => scores[b] - scores[a]);
+    for (const d of ranked) {
+      if (results.length >= 8) break;
+      const item = pageItem[d];
+      if (item === undefined || results.some(r => r.item === item)) continue;
+      results.push({ item, score: scores[d] });
+    }
+    renderResults(raw);
+  }
+
+  function renderResults(raw) {
+    if (results.length === 0) {
+      resultsEl.replaceChildren(el("li", { className: "r-none", textContent: "No article contains these words." }));
+    } else {
+      resultsEl.replaceChildren(...results.map((r, k) => {
+        const n = r.item === "seed" ? null : nodes[r.item];
+        const title = n ? n.title : SEED_LABEL;
+        const text = n ? n.paragraph : G.seed.paragraph;
+        const li = el("li", { className: k === 0 ? "active" : "" },
+          el("span", { className: "r-title", textContent: title }),
+          el("span", { className: "r-meta", textContent: r.score === null ? "title match" : `BM25 ${r.score.toFixed(2)}` }),
+          el("span", { className: "r-snip", innerHTML: snippet(text, raw) }));
+        li.addEventListener("mousedown", ev => { ev.preventDefault(); choose(r); });
+        return li;
+      }));
+    }
+    resultsEl.hidden = false;
+  }
+
+  function choose(r) {
+    resultsEl.hidden = true;
+    select(r.item);
+    if (r.item !== "seed" || state.view === "radial") centerOn(r.item);
+  }
+
+  search.addEventListener("input", runSearch);
+  search.addEventListener("focus", () => { if (search.value.trim()) runSearch(); });
+  search.addEventListener("blur", () => (resultsEl.hidden = true));
+  search.addEventListener("keydown", ev => {
+    if (ev.key === "Enter" && results.length) choose(results[0]);
+    if (ev.key === "Escape") resultsEl.hidden = true;
+  });
 
   // ---- reset: zoom, filters, selection and search ----
   function resetAll() {
     clearFilters();
     search.value = "";
+    resultsEl.hidden = true;
     state.selected = null;
     refresh();
     select(null);
