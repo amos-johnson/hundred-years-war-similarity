@@ -369,6 +369,16 @@
       options: [{ label: "Yes", test: n => n.links_to_seed }, { label: "No", test: n => !n.links_to_seed }],
     },
     {
+      // pct_out_degree: the share of the article's own links that go to other articles in this set.
+      key: "focus", label: "Topic focus",
+      note: "Share of the article's own links that go to other articles here.",
+      tagPrefix: "Focus: ",
+      options: [[0, 0.05], [0.05, 0.1], [0.1, 0.2], [0.2, 0.4], [0.4, 1.01]].map(([lo, hi], k, all) => ({
+        label: k === 0 ? "Under 5%" : k === all.length - 1 ? "Over 40%" : `${lo * 100}–${hi * 100}%`,
+        test: n => n.pct_out >= lo && n.pct_out < hi,
+      })),
+    },
+    {
       key: "length", label: "Length",
       options: [
         { label: "Under 1,000 words", test: n => n.word_count < 1000 },
