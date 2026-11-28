@@ -6,6 +6,7 @@
     get_article(title)        -> its page ID, short description and plain text
     get_backlinks(title)      -> the articles that link to `title`, from all of Wikipedia
     get_article_count()       -> how many articles English Wikipedia has
+    get_template_links(name)  -> the articles a template (e.g. a navbox) links to
 
 Results are cached as JSON in data/raw/, so re-runs don't hit the network.
 """
@@ -258,50 +259,6 @@ def get_link_channels(title, as_of):
         "timestamp": revision["timestamp"],
         "channels": {t: channels.get(t, "added by template") for t in sorted(links)},
     }
-    _save(path, result)
-    return result
-
-
-def get_prose_links(title, as_of):
-    """Each body-text (prose) link in `title`, in page order, as a list of
-    {"target": canonical title, "text": the text shown, "section": "Lead" or the
-    level-2 heading it sits under}.
-
-    Uses the same revision and the same rules as get_link_channels, so an
-    article appears here exactly when its channel is "prose".
-    """
-    import mwparserfromhell
-
-    path = _cache_path("prose_links", title)
-    if path.exists():
-        return json.loads(path.read_text())
-
-    revid = get_link_channels(title, as_of)["revision"]
-    page = _api_get({"action": "query", "revids": revid, "prop": "revisions",
-                     "rvprop": "content", "rvslots": "main"})["query"]["pages"][0]
-    wikitext = page["revisions"][0]["slots"]["main"]["content"]
-    end = re.search(rf"\n==\s*(?:{END_SECTIONS})\s*==", wikitext)
-    body = wikitext[:end.start()] if end else wikitext
-
-    # Split the body at level-2 headings ("== Heading =="); the part before the first is the lead.
-    parts = re.split(r"\n==([^=].*?)==\s*\n", "\n" + body)
-    sections = [("Lead", parts[0])] + [(parts[k].strip(), parts[k + 1]) for k in range(1, len(parts) - 1, 2)]
-
-    channels = get_link_channels(title, as_of)["channels"]
-    found = []
-    for heading, part in sections:
-        code = mwparserfromhell.parse(part)
-        for link in code.filter_wikilinks(recursive=True):
-            target = _link_target(str(link.title))
-            if not target or re.match(r"(?i)(file|image|category):", target):
-                continue
-            if _link_channel(code, link) == "prose":
-                text = (link.text.strip_code() if link.text else str(link.title)).strip()
-                found.append({"target": target, "text": text, "section": heading})
-
-    canonical = _canonical_titles(title, {f["target"] for f in found})
-    result = [{**f, "target": canonical[f["target"]]} for f in found
-              if channels.get(canonical[f["target"]]) == "prose"]
     _save(path, result)
     return result
 

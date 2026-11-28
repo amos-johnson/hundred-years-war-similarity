@@ -4,23 +4,21 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Hundred Years' War Summary</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Spectral:wght@500;600&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
 <style>
-/* Layout: a two-page handout. Four numbered sections (they are a real sequence), each led by a figure, text kept short beside it. Single light look: the charts are drawn for a light ground. */
+/* Layout: a two-page handout. Four numbered sections (a real sequence), each led by a figure, text kept short beside it. Wikipedia's look, matching the graph page: white page, serif headings, link blue, grey hairlines. */
 :root {
-  --paper: #F6F7F9;
-  --card: #FFFFFF;
-  --ink: #17202E;
-  --muted: #4E5868;
-  --line: #DDE2E9;
-  --blue: #2A6FB0;
+  --paper: #FFFFFF;
+  --card: #F8F9FA;
+  --ink: #202122;
+  --muted: #54595D;
+  --line: #A2A9B1;
+  --blue: #3366CC;
   --blue-deep: #0D366B;
   --ochre: #C27C1E;
   --ochre-ink: #8F530C;
-  --font-display: 'Spectral', Georgia, 'Times New Roman', serif;
-  --font-body: 'Inter', -apple-system, 'Segoe UI', Arial, sans-serif;
-  --font-mono: 'JetBrains Mono', ui-monospace, Menlo, Consolas, monospace;
+  --font-display: 'Linux Libertine', 'Georgia', 'Times', serif;
+  --font-body: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Lato, Helvetica, Arial, sans-serif;
+  --font-mono: ui-monospace, Menlo, Consolas, monospace;
   color-scheme: light;
 }
 * { box-sizing: border-box; }
@@ -116,6 +114,17 @@ footer { border-top: 1px solid var(--line); padding-top: 18px; font-size: 0.85re
   .diagrams { grid-template-columns: minmax(0, 1fr); }
   .tiles { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
 }
+/* Wikipedia details: regular-weight serif headings on a hairline, square corners, grey eyebrows */
+h1, h2, h3 { font-weight: 400; }
+.eyebrow { color: var(--muted); }
+.sec-num { color: var(--muted); }
+.sec-head { border-top: 0; padding-top: 0; border-bottom: 1px solid var(--line); padding-bottom: 4px; }
+.tile, .panel, .preset { border-radius: 0; }
+.chip { border-radius: 2px; }
+.tile .n, .metric .n, .result { font-weight: 400; }
+a { text-decoration: none; }
+a:hover { text-decoration: underline; }
+footer p + p { margin-top: 6px; }
 </style>
 </head>
 <body>
@@ -273,14 +282,14 @@ footer { border-top: 1px solid var(--line); padding-top: 18px; font-size: 0.85re
   <div class="sec-head"><span class="sec-num">04</span><h2>Three views in the browser</h2></div>
   <div class="grid g-3">
     <div class="preset">
-      <p class="path">Where the war links to it → Lead</p>
-      <p class="result">16 articles, median rank 164</p>
-      <div class="scale" aria-label="Closeness scale from rank 1 to 788: the lead articles sit at a median of 164, all articles at 395.">
+      <p class="path">% of outlinks in network → Over 40%</p>
+      <p class="result">222 articles, median rank 174</p>
+      <div class="scale" aria-label="Closeness scale from rank 1 to 788: these articles sit at a median of 174, all articles at 395.">
         <div class="track"></div>
         <div class="mk" style="left:50.1%"></div><span class="lab" style="left:50.1%">all 395</span>
-        <div class="dot" style="left:20.8%"></div><span class="lab below" style="left:20.8%">164</span>
+        <div class="dot" style="left:22.1%"></div><span class="lab below" style="left:22.1%">174</span>
       </div>
-      <p class="why">What the war’s article opens with is what the links rank as most related. The link measure and the editors agree.</p>
+      <p class="why">Articles that link mostly to other articles in this set sit closest to the war. Partly built in: the out-link half of the measure counts these same links.</p>
     </div>
     <div class="preset">
       <p class="path">Article type → Battles vs Places</p>
@@ -307,7 +316,7 @@ footer { border-top: 1px solid var(--line); padding-top: 18px; font-size: 0.85re
   <p class="small muted">Each bar runs from rank 1 (closest to the war, dark) to 788 (farthest, light). The grey tick is the median of all articles.</p>
 </section>
 
-<footer>Data: Wikipedia API, collected 29 Sep – 8 Oct 2026. Relatedness: Milne, D. &amp; Witten, I. H. (2008), <i>An effective, low-cost measure of semantic relatedness obtained from Wikipedia links</i>. Code and notebooks: <a href="https://github.com/amos-johnson/hundred-years-war-similarity">github.com/amos-johnson/hundred-years-war-similarity</a>.</footer>
+<footer><p>Data: Wikipedia API, collected 29 Sep – 8 Oct 2026. Relatedness: Milne, D. &amp; Witten, I. H. (2008), <i>An effective, low-cost measure of semantic relatedness obtained from Wikipedia links</i>. Code and notebooks: <a href="https://github.com/amos-johnson/hundred-years-war-similarity">github.com/amos-johnson/hundred-years-war-similarity</a>.</p><p>Article titles and descriptions come from <a href="https://en.wikipedia.org/">Wikipedia</a> and are available under the <a href="https://creativecommons.org/licenses/by-sa/4.0/">Creative Commons Attribution-ShareAlike 4.0 License</a>. This project is not affiliated with the Wikimedia Foundation.</p></footer>
 </div>
 </body>
 </html>
