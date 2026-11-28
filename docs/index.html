@@ -6,283 +6,262 @@
 <title>Wikipedia Article Networks</title>
 <meta name="description" content="The Wikipedia articles linked from the Hundred Years' War, grouped into themes by Milne–Witten link similarity and placed by their closeness to the war.">
 <style>
+  /* Wikipedia's default (light) look: white page, serif headings, link blue, grey hairlines.
+     Light is the default whatever the system setting, as on Wikipedia; the dark palette
+     (Wikipedia's night mode) applies only with data-theme="dark". */
   :root {
-    --surface: #fcfcfb;
-    --surface-2: #f3f2ef;
-    --border: #e4e3df;
-    --text: #0b0b0b;
-    --text-2: #52514e;
-    --muted: #8a8984;
-    --edge: #b9b8b1;
-    --highlight: #0b0b0b;
-    --accent: #2a78d6;
+    --surface: #ffffff;
+    --surface-2: #f8f9fa;
+    --surface-3: #eaecf0;
+    --border: #a2a9b1;
+    --border-light: #c8ccd1;
+    --text: #202122;
+    --text-2: #54595d;
+    --muted: #72777d;
+    --edge: #c8ccd1;
+    --highlight: #202122;
+    --accent: #3366cc;
+    --accent-bg: #eaf3ff;
     --ramp-close: #0d366b;
-    --ramp-mid: #3987e5;
-    --ramp-far: #86b6ef;
-    --shadow: 0 8px 24px rgb(0 0 0 / 0.12);
-  }
-  @media (prefers-color-scheme: dark) {
-    :root:not([data-theme="light"]) {
-      --surface: #1a1a19;
-      --surface-2: #242423;
-      --border: #383835;
-      --text: #ffffff;
-      --text-2: #c3c2b7;
-      --muted: #8f8e86;
-      --edge: #4d4c48;
-      --highlight: #ffffff;
-      --accent: #3987e5;
-      --ramp-close: #cde2fb;
-      --ramp-mid: #5598e7;
-      --ramp-far: #184f95;
-      --shadow: 0 8px 24px rgb(0 0 0 / 0.5);
-    }
+    --ramp-mid: #3366cc;
+    --ramp-far: #b8cdf0;
+    --shadow: 0 2px 6px rgb(0 0 0 / 0.16);
+    --serif: 'Linux Libertine', 'Georgia', 'Times', serif;
+    --sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Lato, Helvetica, Arial, sans-serif;
+    color-scheme: light;
   }
   :root[data-theme="dark"] {
-    --surface: #1a1a19;
-    --surface-2: #242423;
-    --border: #383835;
-    --text: #ffffff;
-    --text-2: #c3c2b7;
-    --muted: #8f8e86;
-    --edge: #4d4c48;
-    --highlight: #ffffff;
-    --accent: #3987e5;
-    --ramp-close: #cde2fb;
-    --ramp-mid: #5598e7;
-    --ramp-far: #184f95;
-    --shadow: 0 8px 24px rgb(0 0 0 / 0.5);
+    --surface: #101418;
+    --surface-2: #202122;
+    --surface-3: #27292d;
+    --border: #72777d;
+    --border-light: #404244;
+    --text: #eaecf0;
+    --text-2: #a2a9b1;
+    --muted: #8a8f94;
+    --edge: #404244;
+    --highlight: #eaecf0;
+    --accent: #88a3e8;
+    --accent-bg: #233566;
+    --ramp-close: #dbe5fb;
+    --ramp-mid: #88a3e8;
+    --ramp-far: #2a4b8d;
+    --shadow: 0 2px 6px rgb(0 0 0 / 0.5);
+    color-scheme: dark;
   }
 
   * { box-sizing: border-box; }
   [hidden] { display: none !important; }  /* hidden always wins over a class's display */
-  body {
-    margin: 0;
-    background: var(--surface);
-    color: var(--text);
-    font: 14px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif;
-  }
+  body { margin: 0; background: var(--surface); color: var(--text); font: 14px/1.6 var(--sans); }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
   header, main, .below, footer { max-width: 1440px; margin: 0 auto; padding: 0 16px; }
-  header { padding-top: 20px; }
-  h1 { font-size: 22px; margin: 0 0 4px; letter-spacing: -0.01em; }
-  .lede { margin: 0 0 14px; color: var(--text-2); }
+  header { padding-top: 16px; }
 
-  .controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 12px; }
-  .toggle { display: inline-flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
-  .toggle button {
-    border: 0; background: transparent; color: var(--text-2); padding: 6px 14px; font: inherit; cursor: pointer;
+  /* Title bar: serif title on a hairline, tabs like Wikipedia's Read / Edit / View history */
+  .topbar { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 4px 16px; border-bottom: 1px solid var(--border); }
+  h1 { font-family: var(--serif); font-weight: 400; font-size: 28px; line-height: 1.3; margin: 0 0 2px; }
+  .tabs { display: flex; flex-wrap: wrap; }
+  .tabs a { color: var(--accent); font-size: 13px; padding: 6px 8px 5px; border-bottom: 2px solid transparent; white-space: nowrap; }
+  .tabs a:hover { text-decoration: none; border-bottom-color: var(--border-light); }
+  .tabs a[aria-current="page"] { color: var(--text); border-bottom-color: var(--text); }
+  .hatnote { font-style: italic; font-size: 13px; color: var(--text-2); margin: 6px 0 0 1.6em; }
+  .lede { margin: 6px 0 12px; }
+
+  /* Controls: flat grey buttons and a plain search field */
+  .controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 10px; }
+  .toggle { display: inline-flex; }
+  .toggle button, .ghost, .filters-btn {
+    font: inherit; font-size: 13px; color: var(--text); background: var(--surface-2); cursor: pointer;
+    border: 1px solid var(--border); padding: 4px 12px; line-height: 1.5;
   }
-  .toggle button[aria-pressed="true"] { background: var(--text); color: var(--surface); }
+  .ghost, .filters-btn { border-radius: 2px; }
+  .toggle button:first-child { border-radius: 2px 0 0 2px; }
+  .toggle button:last-child { border-radius: 0 2px 2px 0; border-left: 0; }
+  .toggle button:hover, .ghost:hover, .filters-btn:hover { background: var(--surface); border-color: var(--text-2); }
+  .toggle button[aria-pressed="true"] { background: var(--accent-bg); border-color: var(--accent); color: var(--accent); }
+  .toggle button:last-child[aria-pressed="true"] { border-left: 1px solid var(--accent); }
+  .filters-count { color: var(--accent); font-weight: 600; font-variant-numeric: tabular-nums; }
   .search-box { position: relative; flex: 1 1 260px; max-width: 420px; min-width: 0; }
+  input[type="search"] {
+    font: inherit; font-size: 13px; color: var(--text); background: var(--surface); min-width: 0; width: 100%;
+    border: 1px solid var(--border); border-radius: 2px; padding: 4px 10px; line-height: 1.5;
+  }
+  input[type="search"]:focus { outline: none; border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
   .results {
-    position: absolute; z-index: 20; top: calc(100% + 4px); left: 0; right: 0; margin: 0; padding: 4px; list-style: none;
-    background: var(--surface); border: 1px solid var(--border); border-radius: 10px; box-shadow: var(--shadow);
+    position: absolute; z-index: 20; top: calc(100% + 2px); left: 0; right: 0; margin: 0; padding: 0; list-style: none;
+    background: var(--surface); border: 1px solid var(--border); border-radius: 2px; box-shadow: var(--shadow);
     max-height: 70vh; overflow-y: auto;
   }
-  .results li { padding: 6px 8px; border-radius: 6px; cursor: pointer; font-size: 13px; line-height: 1.4; }
+  .results li { padding: 6px 10px; cursor: pointer; font-size: 13px; line-height: 1.4; border-bottom: 1px solid var(--surface-3); }
   .results li:hover, .results li.active { background: var(--surface-2); }
-  .results .r-title { font-weight: 600; }
+  .results .r-title { color: var(--accent); }
   .results .r-meta { color: var(--muted); font-size: 11px; margin-left: 6px; font-variant-numeric: tabular-nums; }
   .results .r-snip { display: block; color: var(--text-2); font-size: 12px; }
-  .results mark { background: none; color: var(--accent); font-weight: 600; }
+  .results mark { background: none; color: var(--text); font-weight: 700; }
   .results .r-none { color: var(--text-2); cursor: default; }
-  input[type="search"] {
-    font: inherit; color: var(--text); background: var(--surface); min-width: 0; width: 100%;
-    border: 1px solid var(--border); border-radius: 8px; padding: 6px 10px;
-  }
-  .ghost {
-    font: inherit; color: var(--text-2); background: transparent; border: 1px solid var(--border);
-    border-radius: 8px; padding: 6px 12px; cursor: pointer;
-  }
-  .ghost:hover { color: var(--text); }
 
-  /* Stats bar: the filtered articles vs all articles (and the selected article) */
-  .stats-bar { display: grid; grid-template-columns: repeat(auto-fit, minmax(128px, 1fr)); gap: 8px; }
-  .tile { background: var(--surface-2); border-radius: 8px; padding: 8px 10px; min-width: 0; transition: opacity 0.15s; }
+  /* Stats: one bordered strip, cells split by hairlines */
+  .stats-bar { display: grid; grid-template-columns: repeat(auto-fit, minmax(128px, 1fr)); border: 1px solid var(--border); background: var(--surface-2); margin-bottom: 12px; }
+  .tile { padding: 6px 10px; min-width: 0; border-right: 1px solid var(--border-light); transition: opacity 0.15s; }
+  .tile:last-child { border-right: 0; }
   .tile .lab { display: block; color: var(--text-2); font-size: 12px; }
-  .tile b { display: block; font-size: 20px; font-weight: 600; font-variant-numeric: tabular-nums; line-height: 1.3; }
+  .tile b { display: block; font-family: var(--serif); font-size: 21px; font-weight: 400; font-variant-numeric: tabular-nums; line-height: 1.25; }
   .tile .all, .tile .sel { display: block; font-size: 12px; font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .tile .all { color: var(--muted); }
   .tile .sel { color: var(--accent); }
   .stats-bar.few .tile:not(:first-child) b { color: var(--muted); }
-  .stats-bar { margin-bottom: 14px; }
-  .stats-note { color: var(--text); font-weight: 600; font-size: 12px; margin: -6px 0 14px; }
+  .stats-note { color: var(--text); font-weight: 600; font-size: 12px; margin: -6px 0 12px; }
 
-  /* Layout: filters | details (only when an article is selected) above the graph */
+  /* Layout: filter sidebar | (infobox) graph */
   .layout { display: grid; grid-template-columns: 230px minmax(0, 1fr); gap: 16px; align-items: start; }
   .layout.filters-hidden { grid-template-columns: minmax(0, 1fr); }
   .layout.filters-hidden #filters { display: none; }
-
-  /* Top bar: Filters button, title, tabs to the notebooks */
-  .topbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; margin-bottom: 4px; }
-  .topbar h1 { margin: 0; }
-  .filters-btn {
-    font: inherit; font-size: 13px; color: var(--text); background: var(--surface); cursor: pointer;
-    border: 1px solid var(--border); border-radius: 8px; padding: 5px 10px; display: inline-flex; align-items: center; gap: 6px;
-  }
-  .filters-btn[aria-expanded="true"] { background: var(--surface-2); }
-  .filters-count { color: var(--accent); font-weight: 600; font-variant-numeric: tabular-nums; }
-  .tabs { display: flex; flex-wrap: wrap; gap: 2px; margin-left: auto; }
-  .tabs a {
-    color: var(--text-2); text-decoration: none; font-size: 13px; padding: 5px 10px; border-radius: 8px; white-space: nowrap;
-  }
-  .tabs a:hover { color: var(--text); background: var(--surface-2); }
-  .tabs a[aria-current="page"] { color: var(--text); background: var(--surface-2); font-weight: 600; }
-
-  /* Dropdown filters (Theme, Article type) */
-  .dd { position: relative; }
-  .dd > summary {
-    list-style: none; cursor: pointer; user-select: none; display: flex; justify-content: space-between; align-items: center; gap: 6px;
-    border: 1px solid var(--border); border-radius: 8px; padding: 5px 10px; color: var(--text-2); font-size: 13px;
-  }
-  .dd > summary::-webkit-details-marker { display: none; }
-  .dd > summary::after { content: "▾"; font-size: 10px; color: var(--muted); }
-  .dd > summary span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .facet.active .dd > summary { color: var(--text); border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
-  .dd .menu {
-    position: absolute; z-index: 15; top: calc(100% + 4px); left: 0; width: min(320px, calc(100vw - 32px));
-    max-height: 380px; overflow-y: auto; background: var(--surface); border: 1px solid var(--border);
-    border-radius: 10px; box-shadow: var(--shadow); padding: 6px 12px;
-  }
-  /* The details card sits to the left of the graph while an article is selected; it scrolls
-     on its own and is never taller than the graph (fitChart sets its max-height). */
   .center { display: flex; flex-direction: row; gap: 12px; min-width: 0; align-items: flex-start; }
   .center .chart { flex: 1; min-width: 0; }
   .center #details { flex: 0 0 300px; overflow-y: auto; }
   .layout:not(.has-details) #details { display: none; }
   @media (max-width: 960px) {
+    .layout { grid-template-columns: minmax(0, 1fr); }
     .center { flex-direction: column; align-items: stretch; }
     .center #details { flex: none; }
   }
-  @media (max-width: 960px) {
-    .layout { grid-template-columns: minmax(0, 1fr); }
-  }
 
-  /* Filters: always-open checkbox lists with live counts */
-  .facets { display: flex; flex-direction: column; gap: 14px; }
+  /* Filter sidebar, like Wikipedia's Contents panel: a serif heading with a [hide] link */
+  .facets { display: flex; flex-direction: column; gap: 12px; }
+  .side-head { display: flex; align-items: baseline; justify-content: space-between; border-bottom: 1px solid var(--border); padding-bottom: 2px; }
+  .side-head h2 { font-family: var(--serif); font-weight: 400; font-size: 18px; margin: 0; }
+  .linkbtn { font: inherit; font-size: 12px; color: var(--accent); background: none; border: 0; padding: 0; cursor: pointer; }
+  .linkbtn:hover { text-decoration: underline; }
   @media (max-width: 960px) {
     .facets { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
   }
-  .facet h2 { display: flex; justify-content: space-between; align-items: baseline; font-size: 13px; margin: 0 0 4px; }
-  .facet h2 button { font: inherit; font-size: 12px; font-weight: 400; color: var(--text-2); background: none; border: 0; padding: 0; cursor: pointer; visibility: hidden; }
+  .facet h2 { display: flex; justify-content: space-between; align-items: baseline; font-size: 13px; font-weight: 700; margin: 0 0 3px; }
+  .facet h2 button { font: inherit; font-size: 12px; font-weight: 400; color: var(--accent); background: none; border: 0; padding: 0; cursor: pointer; visibility: hidden; }
   .facet.active h2 button { visibility: visible; }
-  .facet h2 button:hover { color: var(--text); text-decoration: underline; }
+  .facet h2 button:hover { text-decoration: underline; }
   .facet label {
     display: grid; grid-template-columns: auto 1fr auto; gap: 8px; align-items: start;
-    padding: 3px 6px; margin: 0 -6px; border-radius: 6px; cursor: pointer; font-size: 13px; line-height: 1.35;
+    padding: 2px 6px; margin: 0 -6px; cursor: pointer; font-size: 13px; line-height: 1.4;
   }
   .facet label:hover { background: var(--surface-2); }
-  .facet input { accent-color: var(--accent); margin: 2px 0 0; }
-  .facet .num { color: var(--text-2); font-size: 12px; font-variant-numeric: tabular-nums; text-align: right; }
+  .facet input { accent-color: var(--accent); margin: 3px 0 0; }
+  .facet .num { color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; text-align: right; }
   .facet .sub { display: block; color: var(--muted); font-size: 11px; }
-  .facet-note { color: var(--muted); font-size: 11px; margin: 0 0 4px; line-height: 1.4; }
+  .facet-note { color: var(--muted); font-size: 11px; margin: 0 0 3px; line-height: 1.4; }
+  .facet label, .dd > summary { color: var(--accent); }
   .facet label.zero:not(:has(input:checked)) { color: var(--muted); }
-  /* Color legend, pinned to the graph's bottom-right corner (with the network-view note above it) */
-  .chart-corner {
-    position: absolute; right: 12px; bottom: 12px; max-width: calc(100% - 24px);
-    display: flex; flex-direction: column; align-items: flex-end; gap: 6px; pointer-events: none;
+  .dd { position: relative; }
+  .dd > summary {
+    list-style: none; cursor: pointer; user-select: none; display: flex; justify-content: space-between; align-items: center; gap: 6px;
+    border: 1px solid var(--border); border-radius: 2px; padding: 3px 8px; color: var(--accent); font-size: 13px; background: var(--surface);
   }
-  .legend {
-    width: 220px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
-    padding: 8px 12px 6px;
+  .dd > summary::-webkit-details-marker { display: none; }
+  .dd > summary::after { content: "▾"; font-size: 10px; color: var(--text-2); }
+  .dd > summary span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .facet.active .dd > summary { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+  .dd .menu {
+    position: absolute; z-index: 15; top: calc(100% + 2px); left: 0; width: min(320px, calc(100vw - 32px));
+    max-height: 380px; overflow-y: auto; background: var(--surface); border: 1px solid var(--border);
+    border-radius: 2px; box-shadow: var(--shadow); padding: 6px 12px;
   }
-  .legend .legend-title { margin: 0; font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text); }
 
-  .chart { position: relative; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); }
+  /* Graph panel */
+  .chart { position: relative; border: 1px solid var(--border); background: var(--surface); }
   svg { display: block; width: 100%; height: auto; touch-action: none; cursor: grab; }
   svg:active { cursor: grabbing; }
-
-  /* Lines keep their on-screen width when zooming. */
   .ring, .spoke, .edge, .hl-edge, .node, .seed { vector-effect: non-scaling-stroke; }
-  .ring { fill: none; stroke: var(--border); }
+  .ring { fill: none; stroke: var(--surface-3); }
   .ring-label { fill: var(--muted); font-size: 10px; }
-  .spoke { stroke: var(--border); }
+  .spoke { stroke: var(--surface-3); }
   .edge { stroke: var(--edge); }
-  .hl-edge { stroke: var(--highlight); stroke-opacity: 0.55; }
+  .hl-edge { stroke: var(--highlight); stroke-opacity: 0.5; }
   .node { cursor: pointer; }
   .node.selected { stroke: var(--highlight); stroke-width: 2px; }
   .seed { fill: var(--text); cursor: pointer; }
   .seed.selected { stroke: var(--accent); stroke-width: 2px; }
   .label {
-    fill: var(--text); font-size: 12px; font-weight: 600; pointer-events: none;
+    fill: var(--text); font-family: var(--serif); font-size: 13px; font-weight: 400; pointer-events: none;
     paint-order: stroke; stroke: var(--surface); stroke-width: 4px; stroke-linejoin: round;
   }
 
-  .chart-note { max-width: 360px; margin: 0; font-size: 12px; text-align: right; color: var(--muted); background: var(--surface); border-radius: 6px; padding: 2px 6px; }
-
-  /* Reading guide, pinned to the graph's bottom-left corner; its header button minimizes it */
+  /* Small panels on the graph: legend (bottom-right) and reading guide (bottom-left) */
+  .chart-corner {
+    position: absolute; right: 10px; bottom: 10px; max-width: calc(100% - 20px);
+    display: flex; flex-direction: column; align-items: flex-end; gap: 6px; pointer-events: none;
+  }
+  .chart-note { max-width: 360px; margin: 0; font-size: 12px; text-align: right; color: var(--text-2); background: var(--surface); padding: 2px 6px; }
+  .legend { width: 220px; background: var(--surface-2); border: 1px solid var(--border); padding: 6px 10px 5px; }
+  .legend .legend-title { margin: 0; font-size: 12px; font-weight: 700; color: var(--text); }
+  .gradient { height: 8px; margin: 5px 0 2px; background: linear-gradient(90deg, var(--ramp-close), var(--ramp-mid), var(--ramp-far)); }
+  .gradient-labels { display: flex; justify-content: space-between; color: var(--text-2); font-size: 12px; }
   .howto {
-    position: absolute; bottom: 12px; left: 12px; width: min(300px, calc(100% - 24px));
-    background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
-    font-size: 12.5px; line-height: 1.45; color: var(--text-2);
+    position: absolute; bottom: 10px; left: 10px; width: min(300px, calc(100% - 20px));
+    background: var(--surface-2); border: 1px solid var(--border); font-size: 12.5px; line-height: 1.5; color: var(--text);
   }
   .howto.min { width: auto; }
   .howto-head {
     display: flex; align-items: center; justify-content: space-between; gap: 10px; width: 100%;
-    font: inherit; font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase;
-    color: var(--text); background: none; border: 0; padding: 8px 12px; cursor: pointer; text-align: left;
+    font: inherit; font-size: 12px; font-weight: 700; color: var(--text); background: none; border: 0; padding: 5px 10px; cursor: pointer; text-align: left;
   }
-  .howto-head::after { content: "–"; font-size: 14px; color: var(--muted); }
-  .howto.min .howto-head::after { content: "+"; }
-  .howto-head:hover::after { color: var(--text); }
-  .howto-body { display: flex; flex-direction: column; gap: 6px; padding: 0 12px 10px; }
+  .howto-head::after { content: "[hide]"; font-weight: 400; color: var(--accent); }
+  .howto.min .howto-head::after { content: "[show]"; }
+  .howto-body { display: flex; flex-direction: column; gap: 6px; padding: 0 10px 8px; }
   .howto-body p { margin: 0; }
-
-  /* Footnote marker in the intro, and the reference it points to */
-  .fn { font-size: 0.7em; line-height: 0; vertical-align: super; }
-  .fn a { color: var(--accent); text-decoration: none; padding: 0 1px; }
-  .fn a:hover { text-decoration: underline; }
-  .refs { margin: 8px 0 0; padding: 0; list-style: none; }
-  .refs li:target { color: var(--text); }
-  .refs a { color: var(--text-2); }
   .tooltip {
     position: absolute; pointer-events: none; background: var(--surface); color: var(--text);
-    border: 1px solid var(--border); border-radius: 8px; padding: 6px 10px; font-size: 12px;
+    border: 1px solid var(--border); border-radius: 2px; padding: 5px 9px; font-size: 12px;
     box-shadow: var(--shadow); max-width: 260px; opacity: 0; transition: opacity 0.1s;
   }
   .tooltip strong { display: block; }
   .tooltip span { color: var(--text-2); }
 
-  .card { border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; background: var(--surface); }
-  .card h2 { font-size: 13px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-2); margin: 0 0 8px; }
-
-  .gradient { height: 10px; border-radius: 5px; margin: 6px 0 2px;
-    background: linear-gradient(90deg, var(--ramp-close), var(--ramp-mid), var(--ramp-far)); }
-  .gradient-labels { display: flex; justify-content: space-between; color: var(--text-2); font-size: 12px; }
-
-  .details { position: relative; }
-  .details .close { position: absolute; top: 8px; right: 10px; font: inherit; font-size: 18px; line-height: 1; color: var(--text-2); background: none; border: 0; cursor: pointer; padding: 4px; }
-  .details .close:hover { color: var(--text); }
-  .details h3 { font-size: 17px; margin: 0 24px 2px 0; }
-  .details h3 a { color: var(--text); text-decoration-color: var(--border); text-underline-offset: 3px; }
-  .details .desc { color: var(--text-2); margin: 0 0 8px; }
-  .details .para { margin: 10px 0 12px; font-size: 13px; }
-  .chip { display: inline-block; font-size: 12px; padding: 1px 8px; border-radius: 999px; background: var(--surface-2); border: 1px solid var(--border); }
-  .tags { display: flex; flex-wrap: wrap; gap: 6px; }
-  button.chip { font: inherit; font-size: 12px; color: var(--text); cursor: pointer; }
-  button.chip:hover { border-color: var(--text-2); }
-  button.chip.active { border-color: var(--accent); color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+  /* Infobox: the selected article's details, as on a Wikipedia article */
+  .infobox { position: relative; background: var(--surface-2); border: 1px solid var(--border); padding: 4px; font-size: 12.5px; line-height: 1.5; }
+  .infobox .ib-title { font-size: 15px; font-weight: 700; text-align: center; background: var(--surface-3); padding: 6px 28px; margin: -4px -4px 4px; line-height: 1.3; }
+  .infobox .ib-title a { color: var(--text); }
+  .infobox .close { position: absolute; top: 4px; right: 6px; font: inherit; font-size: 16px; line-height: 1; color: var(--text-2); background: none; border: 0; cursor: pointer; padding: 4px; }
+  .infobox .close:hover { color: var(--text); }
+  .infobox .ib-img { display: block; max-width: 100%; max-height: 220px; margin: 4px auto; }
+  .infobox .ib-desc { text-align: center; font-style: italic; color: var(--text-2); margin: 2px 4px 6px; }
+  .infobox table.ib { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+  .infobox table.ib th { text-align: left; vertical-align: top; padding: 2px 8px 2px 4px; font-weight: 700; white-space: normal; width: 42%; border: 0; color: var(--text); font-size: 12.5px; }
+  .infobox table.ib td { padding: 2px 4px; white-space: normal; border: 0; }
+  .infobox .ib-section { text-align: center; font-weight: 700; background: var(--surface-3); padding: 2px 4px; margin: 6px -4px 4px; }
+  .infobox .para { margin: 4px; }
+  .infobox .hint { margin: 6px 4px 4px; color: var(--text-2); font-size: 12px; }
+  .chip { display: inline-block; font-size: 12px; padding: 0 6px; border-radius: 2px; background: var(--surface); border: 1px solid var(--border-light); }
+  .tags { display: flex; flex-wrap: wrap; gap: 4px; padding: 0 4px; }
+  button.chip { font: inherit; font-size: 12px; color: var(--accent); cursor: pointer; }
+  button.chip:hover { border-color: var(--accent); }
+  button.chip.active { background: var(--accent-bg); border-color: var(--accent); }
   .hint { color: var(--text-2); font-size: 13px; margin: 0; }
 
-  /* Related-articles table */
-  .below { margin-top: 16px; }
-  .table-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 16px; margin-bottom: 8px; }
-  .table-head h2 { margin: 0; }
-  .table-head .hint { font-size: 12px; }
-  .table-wrap { overflow-x: auto; }
-  table { width: 100%; border-collapse: collapse; font-size: 13px; }
-  th, td { padding: 7px 10px; text-align: left; border-bottom: 1px solid var(--border); white-space: nowrap; }
-  th { color: var(--text-2); font-weight: 600; font-size: 12px; }
-  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
-  td.title { white-space: normal; min-width: 180px; }
-  td.title button { font: inherit; color: var(--text); background: none; border: 0; padding: 0; cursor: pointer; text-align: left; }
-  td.title button:hover { text-decoration: underline; }
-  td.theme { color: var(--text-2); }
-  td.empty { color: var(--text-2); white-space: normal; }
-  tbody tr:hover { background: var(--surface-2); }
-  tbody tr:last-child td { border-bottom: 0; }
+  /* Footnote [1] and References */
+  .fn { font-size: 0.75em; line-height: 0; vertical-align: super; }
+  .fn a { padding: 0 1px; }
+  .section-title { font-family: var(--serif); font-weight: 400; font-size: 22px; border-bottom: 1px solid var(--border); margin: 20px 0 6px; padding-bottom: 2px; }
+  .refs { margin: 0; padding-left: 2em; font-size: 13px; color: var(--text); }
+  .refs li:target { background: var(--accent-bg); }
+  .refs .up { font-weight: 700; margin-right: 4px; }
 
-  footer { color: var(--muted); font-size: 12px; padding-top: 16px; padding-bottom: 24px; }
+  /* Related articles: a wikitable */
+  .below { margin-top: 18px; }
+  .table-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 16px; }
+  .table-head h2 { flex: 1; }
+  .table-wrap { overflow-x: auto; }
+  table.wikitable { width: 100%; border-collapse: collapse; font-size: 13px; background: var(--surface-2); border: 1px solid var(--border); }
+  .wikitable th, .wikitable td { padding: 4px 8px; text-align: left; border: 1px solid var(--border); white-space: nowrap; }
+  .wikitable th { background: var(--surface-3); font-weight: 700; color: var(--text); }
+  .wikitable td.num, .wikitable th.num { text-align: right; font-variant-numeric: tabular-nums; }
+  .wikitable td.title { white-space: normal; min-width: 180px; }
+  .wikitable td.title button { font: inherit; color: var(--accent); background: none; border: 0; padding: 0; cursor: pointer; text-align: left; }
+  .wikitable td.title button:hover { text-decoration: underline; }
+  .wikitable td.title .ext { margin-left: 6px; font-size: 11px; color: var(--muted); }
+  .wikitable td.empty { color: var(--text-2); white-space: normal; }
+
+  footer { color: var(--text-2); font-size: 12px; padding-top: 8px; padding-bottom: 28px; }
+  footer p { margin: 8px 0 0; }
 </style>
 </head>
 <body>
@@ -300,7 +279,8 @@
       <a href="https://github.com/amos-johnson/hundred-years-war-similarity/blob/main/notebooks/06_search.ipynb" target="_blank" rel="noopener">6 · Search</a>
     </nav>
   </div>
-  <p class="lede">A visual graph of Wikipedia articles. The edges of the graph are weighted by a link-based similarity measure developed by Milne and Witten (2008).<sup class="fn"><a href="#ref-1" id="cite-1" aria-label="Reference 1">1</a></sup></p>
+  <p class="hatnote">For how this was built, see the <a href="summary.html">summary</a> and the <a href="https://github.com/amos-johnson/hundred-years-war-similarity/blob/main/notebooks/01_collect_and_explore.ipynb" target="_blank" rel="noopener">notebooks</a>.</p>
+  <p class="lede">A visual graph of Wikipedia articles. The edges of the graph are weighted by a link-based similarity measure developed by Milne and Witten (2008).<sup class="fn"><a href="#ref-1" id="cite-1" aria-label="Reference 1">[1]</a></sup></p>
   <div class="controls">
     <div class="toggle" role="group" aria-label="Layout">
       <button type="button" data-view="radial" aria-pressed="true">Radial</button>
@@ -320,9 +300,11 @@
 </header>
 
 <main class="layout" id="layout">
-  <aside class="facets" id="filters" aria-label="Filters"></aside>
+  <aside class="facets" id="filters" aria-label="Filters">
+    <div class="side-head"><h2>Filters</h2><button type="button" class="linkbtn" id="filters-hide">[hide]</button></div>
+  </aside>
   <div class="center">
-    <section class="card details" id="details" aria-live="polite"></section>
+    <section class="infobox" id="details" aria-live="polite"></section>
     <div class="chart">
       <svg id="graph" viewBox="-480 -410 960 820" role="img" aria-label="Graph of the articles by theme and closeness to the war"></svg>
       <div class="tooltip" id="tooltip"></div>
@@ -347,13 +329,13 @@
 </main>
 
 <section class="below">
-  <div class="card">
+  <div>
     <div class="table-head">
-      <h2 id="table-title">Most related articles</h2>
+      <h2 class="section-title" id="table-title">Most related articles</h2>
       <p class="hint" id="table-hint"></p>
     </div>
     <div class="table-wrap">
-      <table>
+      <table class="wikitable">
         <thead>
           <tr>
             <th class="num">#</th>
@@ -372,10 +354,12 @@
 </section>
 
 <footer>
-  Similarity is computed from each article's out-links and its in-links from all of Wikipedia. Themes: Louvain communities on each article's 10 most similar articles. Data collected from the Wikipedia API, September–October 2026.
+  <h2 class="section-title">References</h2>
   <ol class="refs">
-    <li id="ref-1"><sup>1</sup> Milne, D. &amp; Witten, I. H. (2008). <em>An effective, low-cost measure of semantic relatedness obtained from Wikipedia links.</em> AAAI Workshop on Wikipedia and Artificial Intelligence. <a href="#cite-1" aria-label="Back to the text">↩</a></li>
+    <li id="ref-1"><a class="up" href="#cite-1" aria-label="Back to the text">^</a>Milne, D. &amp; Witten, I. H. (2008). <em>An effective, low-cost measure of semantic relatedness obtained from Wikipedia links.</em> AAAI Workshop on Wikipedia and Artificial Intelligence.</li>
   </ol>
+  <p>Similarity is computed from each article's out-links and its in-links from all of Wikipedia. Themes: Louvain communities on each article's 10 most similar articles. Data collected from the Wikipedia API, September–October 2026.</p>
+  <p>Article titles, descriptions, text excerpts and images come from <a href="https://en.wikipedia.org/" target="_blank" rel="noopener">Wikipedia</a> and are available under the <a href="https://creativecommons.org/licenses/by-sa/4.0/" target="_blank" rel="noopener">Creative Commons Attribution-ShareAlike 4.0 License</a>. This project is not affiliated with the Wikimedia Foundation.</p>
 </footer>
 
 <script src="data.js"></script>
@@ -450,7 +434,6 @@
       // Step 5: hand-labeled for some articles, predicted from text for the rest. Closest type first.
       key: "type", label: "Article type",
       dropdown: true,
-      note: `Hand-labeled for ${fmt(nodes.filter(n => !n.type_predicted).length)} articles, predicted from their text for the rest.`,
       tagSuffix: n => (n.type_predicted ? " (predicted)" : ""),
       options: TYPES.map(t => ({ label: t[0].toUpperCase() + t.slice(1), test: n => n.type === t })),
     },
@@ -466,7 +449,6 @@
     {
       // pct_out_degree: the share of the article's own links that go to other articles in this set.
       key: "focus", label: "% of outlinks in network",
-      note: "Share of the article's own links that go to other articles here.",
       tagPrefix: "Outlinks in network: ",
       options: [[0, 0.05], [0.05, 0.1], [0.1, 0.2], [0.2, 0.4], [0.4, 1.01]].map(([lo, hi], k, all) => ({
         label: k === 0 ? "Under 5%" : k === all.length - 1 ? "Over 40%" : `${lo * 100}–${hi * 100}%`,
@@ -539,12 +521,14 @@
   function showFilters(show) {
     layoutPane.classList.toggle("filters-hidden", !show);
     filtersBtn.setAttribute("aria-expanded", String(show));
+    filtersBtn.hidden = show;
     try { localStorage.setItem("filters-open", show ? "1" : "0"); } catch (e) { /* storage unavailable */ }
   }
   let savedOpen = null;
   try { savedOpen = localStorage.getItem("filters-open"); } catch (e) { /* storage unavailable */ }
   showFilters(savedOpen === null ? window.innerWidth > 960 : savedOpen === "1");
-  filtersBtn.addEventListener("click", () => showFilters(layoutPane.classList.contains("filters-hidden")));
+  filtersBtn.addEventListener("click", () => showFilters(true));
+  document.getElementById("filters-hide").addEventListener("click", () => showFilters(false));
 
   // Count next to each option: how many articles you'd get by also ticking it
   // (the other filters stay as they are; within its own filter the option counts alone).
@@ -572,36 +556,29 @@
     for (const f of FILTERS) { f.checked.clear(); f.boxes.forEach(b => (b.checked = false)); }
   }
 
-  // ---- stats bar: the filtered articles vs all articles, plus the selected article ----
+  // ---- stats bar: the filtered articles vs all articles (the selected article's own values are in the infobox) ----
   const f2 = d3.format(".2f"), f3 = d3.format(".3f"), pct = d3.format(".0%");
   const STATS = [
-    { label: "Articles", value: s => fmt(s.length), all: () => `of ${fmt(N)}`, sel: () => null },
-    { label: "Median rank vs the war", value: s => fmt(Math.round(d3.median(s, n => n.rank))), sel: n => fmt(n.rank) },
-    { label: "Mean Milne–Witten", value: s => f3(d3.mean(s, n => n.milne_witten)), sel: n => f3(n.milne_witten) },
-    { label: "Mean in-link", value: s => f3(d3.mean(s, n => n.inlink)), sel: n => f3(n.inlink) },
-    { label: "Mean out-link", value: s => f3(d3.mean(s, n => n.outlink)), sel: n => f3(n.outlink) },
-    { label: "Link back to the war", value: s => pct(d3.mean(s, n => (n.links_to_seed ? 1 : 0))), sel: n => (n.links_to_seed ? "yes" : "no") },
-    { label: "Median length (words)", value: s => fmt(Math.round(d3.median(s, n => n.word_count))), sel: n => fmt(n.word_count) },
-    { label: "Themes covered", value: s => `${new Set(s.map(n => n.cluster)).size}`, all: () => `of ${G.clusters.length}`, sel: n => clusterById.get(n.cluster).name },
+    { label: "Articles", value: s => fmt(s.length), all: () => `of ${fmt(N)}` },
+    { label: "Median rank vs the war", value: s => fmt(Math.round(d3.median(s, n => n.rank))) },
+    { label: "Mean Milne–Witten", value: s => f3(d3.mean(s, n => n.milne_witten)) },
+    { label: "Mean in-link", value: s => f3(d3.mean(s, n => n.inlink)) },
+    { label: "Mean out-link", value: s => f3(d3.mean(s, n => n.outlink)) },
+    { label: "Link back to the war", value: s => pct(d3.mean(s, n => (n.links_to_seed ? 1 : 0))) },
+    { label: "Median length (words)", value: s => fmt(Math.round(d3.median(s, n => n.word_count))) },
+    { label: "Themes covered", value: s => `${new Set(s.map(n => n.cluster)).size}`, all: () => `of ${G.clusters.length}` },
   ];
   const statsBar = document.getElementById("stats");
   const statsNote = document.getElementById("stats-note");
   for (const st of STATS) {
     st.b = el("b");
     st.allEl = el("span", { className: "all", textContent: st.all ? st.all() : `all: ${st.value(nodes)}` });
-    st.selEl = el("span", { className: "sel" });
-    statsBar.append(el("div", { className: "tile" }, el("span", { className: "lab", textContent: st.label }), st.b, st.allEl, st.selEl));
+    statsBar.append(el("div", { className: "tile" }, el("span", { className: "lab", textContent: st.label }), st.b, st.allEl));
   }
 
   function updateStats() {
     const subset = nodes.filter((n, i) => state.ok[i]);
-    const sel = typeof state.selected === "number" ? nodes[state.selected] : null;
-    for (const st of STATS) {
-      st.b.textContent = subset.length ? st.value(subset) : "–";
-      const s = sel ? st.sel(sel) : null;
-      st.selEl.textContent = s == null ? "" : `selected: ${s}`;
-      st.selEl.title = st.selEl.textContent;
-    }
+    for (const st of STATS) st.b.textContent = subset.length ? st.value(subset) : "–";
     statsBar.classList.toggle("few", subset.length < FEW);
     // Only a warning when the subset is too small for averages to mean much.
     statsNote.textContent = subset.length === 0 ? "No articles match these filters."
@@ -820,22 +797,38 @@
     return b;
   }
 
+  // Lead image for the infobox: Wikipedia's page-summary API gives each article's thumbnail.
+  // Fetched when an article is selected, cached, and skipped quietly if it fails.
+  const imageCache = new Map();
+  async function loadImage(title, img) {
+    try {
+      if (!imageCache.has(title)) {
+        const r = await fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(title.replaceAll(" ", "_"))}`);
+        imageCache.set(title, r.ok ? ((await r.json()).thumbnail?.source || null) : null);
+      }
+      const src = imageCache.get(title);
+      if (src && img.isConnected) { img.src = src; img.alt = title; img.hidden = false; }
+    } catch (e) { imageCache.set(title, null); }
+  }
+  const row = (label, value) => el("tr", {}, el("th", { textContent: label }), el("td", {}, value));
+  const wikiLink = (title, text) => el("a", { href: wiki(title), target: "_blank", rel: "noopener", textContent: text });
+
   function renderSeed() {
+    const img = el("img", { className: "ib-img", alt: "", hidden: true });
     details.replaceChildren(
       closeButton(),
-      el("h3", {}, el("a", { href: wiki(G.seed.title), target: "_blank", rel: "noopener", textContent: G.seed.title })),
-      el("p", { className: "desc", textContent: G.seed.shortdesc }),
-      el("span", { className: "chip", textContent: "the seed" }),
-      el("p", { className: "para", textContent: G.seed.paragraph }),
-      el("p", { className: "hint", textContent: `Every one of the ${fmt(N)} articles is here because this article links to it. Ranks measure each one's similarity to it.` }),
+      el("div", { className: "ib-title" }, wikiLink(G.seed.title, G.seed.title)),
+      img,
+      el("p", { className: "ib-desc", textContent: G.seed.shortdesc }),
+      el("table", { className: "ib" }, el("tbody", {},
+        row("Role", "The seed: every article here is linked from it"),
+        row("Articles", fmt(N)),
+      )),
+      el("div", { className: "ib-section", textContent: "From Wikipedia" }),
+      el("p", { className: "para" }, G.seed.paragraph + " ", wikiLink(G.seed.title, "Read on Wikipedia")),
     );
+    loadImage(G.seed.title, img);
   }
-
-  const CHANNEL_TEXT = {
-    "added by template": "a navbox, sidebar or other template",
-    "infobox": "the infobox", "caption": "an image caption", "table": "a table",
-    "reference": "a citation", "footnote": "a footnote", "other template": "a template", "end section": "See also, Further reading or similar",
-  };
 
   // One tag per filter option the article matches. Tags of ticked options are highlighted;
   // clicking a tag ticks or unticks that option.
@@ -863,20 +856,29 @@
   function renderNode(i) {
     const n = nodes[i];
     const outside = Math.round(n.outside_share * 10);
+    const img = el("img", { className: "ib-img", alt: "", hidden: true });
     details.replaceChildren(
       closeButton(),
-      el("h3", {}, el("a", { href: wiki(n.title), target: "_blank", rel: "noopener", textContent: n.title })),
-      n.shortdesc ? el("p", { className: "desc", textContent: n.shortdesc }) : null,
+      el("div", { className: "ib-title" }, wikiLink(n.title, n.title)),
+      img,
+      n.shortdesc ? el("p", { className: "ib-desc", textContent: n.shortdesc }) : null,
+      el("table", { className: "ib" }, el("tbody", {},
+        row("Theme", clusterById.get(n.cluster).name),
+        row("Type", n.type[0].toUpperCase() + n.type.slice(1) + (n.type_predicted ? " (predicted)" : "")),
+        row("Rank vs the war", `${n.rank} of ${fmt(N)}`),
+        row("Milne–Witten", n.milne_witten.toFixed(3)),
+        row("Links back", n.links_to_seed ? "Yes" : "No"),
+        row("Length", `${fmt(n.word_count)} words`),
+        row("Outlinks in network", `${Math.round(n.pct_out * 100)}%`),
+        row("10 nearest", outside === 0 ? "All in its theme" : `${outside} in other themes${outside >= 6 ? " (a bridge)" : ""}`),
+      )),
+      el("div", { className: "ib-section", textContent: "Filter by" }),
       filterTags(n),
-      n.paragraph ? el("p", { className: "para", textContent: n.paragraph }) : null,
-      el("p", { className: "hint", textContent: (outside === 0
-        ? "All 10 of its most similar articles are in the same theme."
-        : `${outside} of its 10 most similar articles are in other themes${outside >= 6 ? ": a bridge between themes." : "."}`)
-        + (n.channel === "prose"
-          ? ` The war's article links to it in: ${n.sections.join(", ")}.`
-          : ` The war's article links to it only outside its body text (${CHANNEL_TEXT[n.channel] || n.channel}).`)
-        + (state.ok[i] ? "" : " It doesn't match the current filters.") }),
+      n.paragraph ? el("div", { className: "ib-section", textContent: "From Wikipedia" }) : null,
+      n.paragraph ? el("p", { className: "para" }, n.paragraph + " ", wikiLink(n.title, "Read on Wikipedia")) : null,
+      state.ok[i] ? null : el("p", { className: "hint", textContent: "This article doesn't match the current filters." }),
     );
+    loadImage(n.title, img);
   }
 
   // ---- related-articles table (follows the filters) ----
@@ -894,11 +896,12 @@
     }
     related.replaceChildren(...state.related.map((r, k) => {
       const m = nodes[r.j];
-      const btn = el("button", { type: "button", textContent: m.title });
+      const btn = el("button", { type: "button", textContent: m.title, title: "Show in the graph" });
       btn.addEventListener("click", () => { select(r.j); centerOn(r.j); });
+      const ext = el("a", { className: "ext", href: wiki(m.title), target: "_blank", rel: "noopener", textContent: "↗", ariaLabel: `${m.title} on Wikipedia`, title: "Open on Wikipedia" });
       return el("tr", {},
         el("td", { className: "num", textContent: k + 1 }),
-        el("td", { className: "title" }, btn),
+        el("td", { className: "title" }, btn, ext),
         el("td", { className: "theme", textContent: clusterById.get(m.cluster).name }),
         el("td", { className: "num", textContent: r.mw.toFixed(3) }),
         el("td", { className: "num", textContent: r.inl.toFixed(3) }),
