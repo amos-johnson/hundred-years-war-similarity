@@ -9,7 +9,7 @@ Which Wikipedia articles are most closely related to the [Hundred Years' War](ht
 ## Results
 
 - **12 themes:**
-  - the war's three phases: Edwardian (with the scholarship its articles cite), Brittany and the Caroline phase, Lancastrian
+  - the war's three phases: Edwardian (1337–1360, with the scholarship its articles cite), Brittany and the Caroline phase (1369–1389), Lancastrian (1415–1453)
   - Joan of Arc and her legacy
   - the English and French monarchies
   - Burgundy and the Low Countries
