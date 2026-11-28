@@ -82,6 +82,9 @@
   .toggle button[aria-pressed="true"] { background: var(--accent-bg); border-color: var(--accent); color: var(--accent); }
   .toggle button:last-child[aria-pressed="true"] { border-left: 1px solid var(--accent); }
   .filters-count { color: var(--accent); font-weight: 600; font-variant-numeric: tabular-nums; }
+  .top-n { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--text-2); }
+  .top-n input { width: 120px; margin: 0; accent-color: var(--accent); }
+  .top-n output { min-width: 2ch; text-align: right; font-variant-numeric: tabular-nums; font-weight: 700; color: var(--text); }
   .search-box { position: relative; flex: 1 1 260px; max-width: 420px; min-width: 0; }
   input[type="search"] {
     font: inherit; font-size: 13px; color: var(--text); background: var(--surface); min-width: 0; width: 100%;
@@ -293,6 +296,9 @@
     <button type="button" class="filters-btn" id="filters-btn" aria-controls="filters" aria-expanded="true">
       <span aria-hidden="true">☰</span> Filters <span class="filters-count" id="filters-count"></span>
     </button>
+    <label class="top-n" title="How many of the selected article's most related articles to highlight and list in the table">
+      Highlight <input type="range" id="top-n" min="1" max="50" value="10"> <output id="top-n-val" for="top-n">10</output> most related
+    </label>
   </div>
   <div class="stats-bar" id="stats" aria-live="polite"></div>
   <p class="stats-note" id="stats-note"></p>
@@ -372,7 +378,8 @@
   const S = 300;               // layout units (−1…1) → SVG units
   const INNER = 0.08;          // must match layout.radial_layout
   const R = 3.6;               // node radius
-  const TOP = 10;              // rows in the related-articles table
+  const TOP_DEFAULT = 10;      // related articles highlighted and listed; the slider changes it
+  let top = TOP_DEFAULT;
   const FEW = 5;               // below this many articles, averages are flagged as unreliable
   const SEED_LABEL = `${G.seed.title} (Seed)`;
   const clusterById = new Map(G.clusters.map(c => [c.id, c]));
@@ -648,14 +655,14 @@
   labelSel.attr("text-anchor", c => labelPos(c).anchor)
     .attr("transform", c => { const p = labelPos(c); return `translate(${p.x},${p.y})`; });
 
-  // ---- the related articles: the TOP most related to the selection, among the filtered articles ----
+  // ---- the related articles: the `top` most related to the selection, among the filtered articles ----
   function computeRelated() {
     const sel = state.selected;
     const pool = d3.range(N).filter(j => state.ok[j] && j !== sel);
     if (typeof sel === "number") {
-      state.related = pool.map(j => ({ j, ...pairScores(sel, j) })).sort((a, b) => b.mw - a.mw).slice(0, TOP);
+      state.related = pool.map(j => ({ j, ...pairScores(sel, j) })).sort((a, b) => b.mw - a.mw).slice(0, top);
     } else {
-      state.related = pool.sort((a, b) => nodes[a].rank - nodes[b].rank).slice(0, TOP)
+      state.related = pool.sort((a, b) => nodes[a].rank - nodes[b].rank).slice(0, top)
         .map(j => ({ j, mw: nodes[j].milne_witten, inl: nodes[j].inlink, outl: nodes[j].outlink }));
     }
   }
@@ -1030,7 +1037,21 @@
   });
 
   // ---- reset: zoom, filters, selection and search ----
+  // ---- how many related articles to highlight (slider) ----
+  const topInput = document.getElementById("top-n");
+  const topOut = document.getElementById("top-n-val");
+  function setTop(k) {
+    top = k;
+    topInput.value = k;
+    topOut.textContent = k;
+    computeRelated();
+    renderTable();
+    paint();
+  }
+  topInput.addEventListener("input", () => setTop(+topInput.value));
+
   function resetAll() {
+    setTop(TOP_DEFAULT);
     clearFilters();
     search.value = "";
     resultsEl.hidden = true;
