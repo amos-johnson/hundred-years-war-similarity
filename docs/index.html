@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Hundred Years' War Themes</title>
+<title>Wikipedia Article Networks</title>
 <meta name="description" content="The Wikipedia articles linked from the Hundred Years' War, grouped into themes by Milne–Witten link similarity and placed by their closeness to the war.">
 <style>
   :root {
@@ -55,6 +55,7 @@
   }
 
   * { box-sizing: border-box; }
+  [hidden] { display: none !important; }  /* hidden always wins over a class's display */
   body {
     margin: 0;
     background: var(--surface);
@@ -64,7 +65,7 @@
   header, main, .below, footer { max-width: 1440px; margin: 0 auto; padding: 0 16px; }
   header { padding-top: 20px; }
   h1 { font-size: 22px; margin: 0 0 4px; letter-spacing: -0.01em; }
-  .lede { margin: 0 0 14px; color: var(--text-2); max-width: 80ch; }
+  .lede { margin: 0 0 14px; color: var(--text-2); }
 
   .controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 12px; }
   .toggle { display: inline-flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
@@ -143,8 +144,16 @@
     max-height: 380px; overflow-y: auto; background: var(--surface); border: 1px solid var(--border);
     border-radius: 10px; box-shadow: var(--shadow); padding: 6px 12px;
   }
-  .center { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+  /* The details card sits to the left of the graph while an article is selected; it scrolls
+     on its own and is never taller than the graph (fitChart sets its max-height). */
+  .center { display: flex; flex-direction: row; gap: 12px; min-width: 0; align-items: flex-start; }
+  .center .chart { flex: 1; min-width: 0; }
+  .center #details { flex: 0 0 300px; overflow-y: auto; }
   .layout:not(.has-details) #details { display: none; }
+  @media (max-width: 960px) {
+    .center { flex-direction: column; align-items: stretch; }
+    .center #details { flex: none; }
+  }
   @media (max-width: 960px) {
     .layout { grid-template-columns: minmax(0, 1fr); }
   }
@@ -168,8 +177,16 @@
   .facet .sub { display: block; color: var(--muted); font-size: 11px; }
   .facet-note { color: var(--muted); font-size: 11px; margin: 0 0 4px; line-height: 1.4; }
   .facet label.zero:not(:has(input:checked)) { color: var(--muted); }
-  .legend { border-top: 1px solid var(--border); padding-top: 12px; }
-  .legend h2 { font-size: 13px; margin: 0; }
+  /* Color legend, pinned to the graph's bottom-right corner (with the network-view note above it) */
+  .chart-corner {
+    position: absolute; right: 12px; bottom: 12px; max-width: calc(100% - 24px);
+    display: flex; flex-direction: column; align-items: flex-end; gap: 6px; pointer-events: none;
+  }
+  .legend {
+    width: 220px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+    padding: 8px 12px 6px;
+  }
+  .legend .legend-title { margin: 0; font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text); }
 
   .chart { position: relative; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); }
   svg { display: block; width: 100%; height: auto; touch-action: none; cursor: grab; }
@@ -191,7 +208,33 @@
     paint-order: stroke; stroke: var(--surface); stroke-width: 4px; stroke-linejoin: round;
   }
 
-  .chart-note { position: absolute; left: 12px; bottom: 8px; margin: 0; font-size: 12px; color: var(--muted); pointer-events: none; }
+  .chart-note { max-width: 360px; margin: 0; font-size: 12px; text-align: right; color: var(--muted); background: var(--surface); border-radius: 6px; padding: 2px 6px; }
+
+  /* Reading guide, pinned to the graph's bottom-left corner; its header button minimizes it */
+  .howto {
+    position: absolute; bottom: 12px; left: 12px; width: min(300px, calc(100% - 24px));
+    background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+    font-size: 12.5px; line-height: 1.45; color: var(--text-2);
+  }
+  .howto.min { width: auto; }
+  .howto-head {
+    display: flex; align-items: center; justify-content: space-between; gap: 10px; width: 100%;
+    font: inherit; font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase;
+    color: var(--text); background: none; border: 0; padding: 8px 12px; cursor: pointer; text-align: left;
+  }
+  .howto-head::after { content: "–"; font-size: 14px; color: var(--muted); }
+  .howto.min .howto-head::after { content: "+"; }
+  .howto-head:hover::after { color: var(--text); }
+  .howto-body { display: flex; flex-direction: column; gap: 6px; padding: 0 12px 10px; }
+  .howto-body p { margin: 0; }
+
+  /* Footnote marker in the intro, and the reference it points to */
+  .fn { font-size: 0.7em; line-height: 0; vertical-align: super; }
+  .fn a { color: var(--accent); text-decoration: none; padding: 0 1px; }
+  .fn a:hover { text-decoration: underline; }
+  .refs { margin: 8px 0 0; padding: 0; list-style: none; }
+  .refs li:target { color: var(--text); }
+  .refs a { color: var(--text-2); }
   .tooltip {
     position: absolute; pointer-events: none; background: var(--surface); color: var(--text);
     border: 1px solid var(--border); border-radius: 8px; padding: 6px 10px; font-size: 12px;
@@ -245,20 +288,19 @@
 <body>
 <header>
   <div class="topbar">
-    <button type="button" class="filters-btn" id="filters-btn" aria-controls="filters" aria-expanded="true">
-      <span aria-hidden="true">☰</span> Filters <span class="filters-count" id="filters-count"></span>
-    </button>
-    <h1>The Hundred Years' War on Wikipedia</h1>
+    <h1>Networks of Wikipedia article relationships</h1>
     <nav class="tabs" aria-label="Pages">
       <a href="index.html" aria-current="page">Graph</a>
-      <a href="story/1_data.html">1 · Data</a>
-      <a href="story/2_similarity.html">2 · Similarity</a>
-      <a href="story/3_themes.html">3 · Themes</a>
-      <a href="story/4_types.html">4 · Types</a>
-      <a href="story/5_search.html">5 · Search</a>
+      <a href="summary.html">Summary</a>
+      <a href="https://github.com/amos-johnson/hundred-years-war-similarity/blob/main/notebooks/01_collect_and_explore.ipynb" target="_blank" rel="noopener">1 · Data</a>
+      <a href="https://github.com/amos-johnson/hundred-years-war-similarity/blob/main/notebooks/02_milne_witten.ipynb" target="_blank" rel="noopener">2 · Similarity</a>
+      <a href="https://github.com/amos-johnson/hundred-years-war-similarity/blob/main/notebooks/03_article_types.ipynb" target="_blank" rel="noopener">3 · Types</a>
+      <a href="https://github.com/amos-johnson/hundred-years-war-similarity/blob/main/notebooks/04_clustering.ipynb" target="_blank" rel="noopener">4 · Themes</a>
+      <a href="https://github.com/amos-johnson/hundred-years-war-similarity/blob/main/notebooks/05_graph.ipynb" target="_blank" rel="noopener">5 · Layout</a>
+      <a href="https://github.com/amos-johnson/hundred-years-war-similarity/blob/main/notebooks/06_search.ipynb" target="_blank" rel="noopener">6 · Search</a>
     </nav>
   </div>
-  <p class="lede">The <span id="n-articles"></span> articles that the <em>Hundred Years' War</em> article links to, grouped into <span id="n-themes"></span> themes by how they link (Milne–Witten similarity). <b>Radial:</b> each wedge is a theme, and the closer an article is to the center, the more similar it is to the war. <b>Network:</b> similar articles are pulled together. Combine filters to see which kinds of articles sit closest to the war.</p>
+  <p class="lede">A visual graph of Wikipedia articles. The edges of the graph are weighted by a link-based similarity measure developed by Milne and Witten (2008).<sup class="fn"><a href="#ref-1" id="cite-1" aria-label="Reference 1">1</a></sup></p>
   <div class="controls">
     <div class="toggle" role="group" aria-label="Layout">
       <button type="button" data-view="radial" aria-pressed="true">Radial</button>
@@ -269,25 +311,37 @@
       <ul class="results" id="results" hidden></ul>
     </div>
     <button type="button" class="ghost" id="reset">Reset view</button>
+    <button type="button" class="filters-btn" id="filters-btn" aria-controls="filters" aria-expanded="true">
+      <span aria-hidden="true">☰</span> Filters <span class="filters-count" id="filters-count"></span>
+    </button>
   </div>
   <div class="stats-bar" id="stats" aria-live="polite"></div>
   <p class="stats-note" id="stats-note"></p>
 </header>
 
 <main class="layout" id="layout">
-  <aside class="facets" id="filters" aria-label="Filters">
-    <div class="legend">
-      <h2>Color: closeness to the war</h2>
-      <div class="gradient"></div>
-      <div class="gradient-labels"><span>rank 1</span><span id="n-least"></span></div>
-    </div>
-  </aside>
+  <aside class="facets" id="filters" aria-label="Filters"></aside>
   <div class="center">
     <section class="card details" id="details" aria-live="polite"></section>
     <div class="chart">
       <svg id="graph" viewBox="-480 -410 960 820" role="img" aria-label="Graph of the articles by theme and closeness to the war"></svg>
       <div class="tooltip" id="tooltip"></div>
-      <p class="chart-note" id="chart-note" hidden>Distances between themes are enlarged for clarity; within a theme, positions are unchanged.</p>
+      <div class="chart-corner">
+        <p class="chart-note" id="chart-note" hidden>Distances between themes are enlarged for clarity; within a theme, positions are unchanged.</p>
+        <div class="legend">
+          <p class="legend-title">Closeness to the war</p>
+          <div class="gradient"></div>
+          <div class="gradient-labels"><span>rank 1</span><span id="n-least"></span></div>
+        </div>
+      </div>
+      <div class="howto" id="howto">
+        <button type="button" class="howto-head" id="howto-toggle" aria-expanded="true" aria-controls="howto-body">How to read it</button>
+        <div class="howto-body" id="howto-body">
+          <p class="howto-view" data-view="radial">The star is the <em>Hundred Years' War</em> article. Each wedge is a theme, and the closer an article sits to the center, the more related it is to the war.</p>
+          <p class="howto-view" data-view="network" hidden>Each article sits near the articles it's most related to, so themes form regions. Lines join each article to its 10 most related.</p>
+          <p>Darker dots are closer to the war. Hover an article for its name, click it for details.</p>
+        </div>
+      </div>
     </div>
   </div>
 </main>
@@ -318,7 +372,10 @@
 </section>
 
 <footer>
-  Similarity: Milne &amp; Witten (2008), <em>An effective, low-cost measure of semantic relatedness obtained from Wikipedia links</em>, computed from each article's out-links and its in-links from all of Wikipedia. Themes: Louvain communities on each article's 10 most similar articles. Data collected from the Wikipedia API, September–October 2026.
+  Similarity is computed from each article's out-links and its in-links from all of Wikipedia. Themes: Louvain communities on each article's 10 most similar articles. Data collected from the Wikipedia API, September–October 2026.
+  <ol class="refs">
+    <li id="ref-1"><sup>1</sup> Milne, D. &amp; Witten, I. H. (2008). <em>An effective, low-cost measure of semantic relatedness obtained from Wikipedia links.</em> AAAI Workshop on Wikipedia and Artificial Intelligence. <a href="#cite-1" aria-label="Back to the text">↩</a></li>
+  </ol>
 </footer>
 
 <script src="data.js"></script>
@@ -338,8 +395,6 @@
   const clusterById = new Map(G.clusters.map(c => [c.id, c]));
   const fmt = d3.format(",");
 
-  document.getElementById("n-articles").textContent = fmt(N);
-  document.getElementById("n-themes").textContent = G.clusters.length;
   document.getElementById("n-least").textContent = `rank ${fmt(N)}`;
 
   for (const c of G.clusters) {
@@ -404,24 +459,15 @@
       options: [[1, 50], [51, 200], [201, 400], [401, N]].map(([a, b]) => ({ label: `Rank ${a}–${b}`, test: n => n.rank >= a && n.rank <= b })),
     },
     {
-      // Which sections of the war's article link to it, in page order. An article linked
-      // in several sections matches each of them.
-      key: "section", label: "Where the war's article links to it",
-      options: [
-        ...G.sections.map(s => ({ label: s, test: n => n.sections.includes(s) })),
-        { label: "Not in its body text", tag: "Not in the war's body text", sub: "navbox, infobox, captions, references, end sections", test: n => n.channel !== "prose" },
-      ],
-    },
-    {
       key: "back", label: "Links back to the war",
       tagPrefix: "Links back: ",
       options: [{ label: "Yes", test: n => n.links_to_seed }, { label: "No", test: n => !n.links_to_seed }],
     },
     {
       // pct_out_degree: the share of the article's own links that go to other articles in this set.
-      key: "focus", label: "Topic focus",
+      key: "focus", label: "% of outlinks in network",
       note: "Share of the article's own links that go to other articles here.",
-      tagPrefix: "Focus: ",
+      tagPrefix: "Outlinks in network: ",
       options: [[0, 0.05], [0.05, 0.1], [0.1, 0.2], [0.2, 0.4], [0.4, 1.01]].map(([lo, hi], k, all) => ({
         label: k === 0 ? "Under 5%" : k === all.length - 1 ? "Over 40%" : `${lo * 100}–${hi * 100}%`,
         test: n => n.pct_out >= lo && n.pct_out < hi,
@@ -450,7 +496,6 @@
   const matches = n => FILTERS.every(f => passes(f, n));
 
   const facetBox = document.getElementById("filters");
-  const legend = facetBox.querySelector(".legend");
   for (const f of FILTERS) {
     const clear = el("button", { type: "button", textContent: "Clear" });
     clear.addEventListener("click", () => { f.checked.clear(); f.boxes.forEach(b => (b.checked = false)); onFiltersChange(); });
@@ -481,7 +526,7 @@
       return box;
     });
     f.group = group;
-    facetBox.insertBefore(group, legend);
+    facetBox.append(group);
   }
   // Close an open dropdown when clicking elsewhere.
   document.addEventListener("click", ev => {
@@ -687,7 +732,8 @@
     renderTable();
     paint();
     // The details card's tags show which filters are ticked.
-    if (typeof state.selected === "number") { renderNode(state.selected); fitChart(); }
+    if (typeof state.selected === "number") renderNode(state.selected);
+    fitChart();  // the stats warning or the details card can change the space above the graph
   }
   const onFiltersChange = refresh;
 
@@ -696,6 +742,7 @@
     if (view === state.view) return;
     state.view = view;
     document.getElementById("chart-note").hidden = view !== "network";
+    document.querySelectorAll(".howto-view").forEach(p => { p.hidden = p.dataset.view !== view; });
     d3.selectAll(".toggle button").attr("aria-pressed", function () { return this.dataset.view === view; });
     gHl.selectAll("line").remove();
     const t = svg.transition().duration(900).ease(d3.easeCubicInOut);
@@ -709,6 +756,15 @@
     gSpokes.transition(t).attr("opacity", view === "radial" ? 1 : 0);
   }
   d3.selectAll(".toggle button").on("click", function () { setView(this.dataset.view); });
+
+  // ---- reading guide: its header button minimizes it to one line, or opens it again ----
+  const howto = document.getElementById("howto");
+  const howtoToggle = document.getElementById("howto-toggle");
+  howtoToggle.addEventListener("click", () => {
+    const open = howto.classList.toggle("min") === false;
+    document.getElementById("howto-body").hidden = !open;
+    howtoToggle.setAttribute("aria-expanded", String(open));
+  });
 
   // ---- zoom and pan ----
   const zoom = d3.zoom().scaleExtent([0.7, 12]).on("zoom", ev => {
@@ -851,16 +907,20 @@
     }));
   }
 
-  // The details card sits above the graph. While it shows, the graph gets shorter (same width)
-  // so the two together take the height the graph alone would.
-  const VIEW_W = 960, VIEW_H = 820, MIN_H = 320;
+  // The graph fills the screen below the header: never taller than what's left of the window
+  // (so its bottom is never cut off), never taller than its own width allows, never under MIN_H.
+  // The details card beside it gets the same height and scrolls inside.
+  const VIEW_W = 960, VIEW_H = 820, MIN_H = 320, BOTTOM_GAP = 16;
   function fitChart() {
     const natural = chart.clientWidth * VIEW_H / VIEW_W;
-    const shown = layoutEl.classList.contains("has-details");
-    const h = shown ? Math.max(MIN_H, natural - details.offsetHeight - 12) : natural;
-    svg.style("height", `${Math.round(h)}px`);
+    const top = chart.getBoundingClientRect().top + window.scrollY;
+    const room = window.innerHeight - top - BOTTOM_GAP;
+    const h = Math.round(Math.max(MIN_H, Math.min(natural, room)));
+    svg.style("height", `${h}px`);
+    details.style.maxHeight = window.innerWidth > 960 ? `${h + 2}px` : "";
   }
   new ResizeObserver(fitChart).observe(chart);
+  window.addEventListener("resize", fitChart);
 
   function select(i) {
     state.selected = i;

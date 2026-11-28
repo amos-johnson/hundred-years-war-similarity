@@ -9,11 +9,11 @@ Which Wikipedia articles are most closely related to the [Hundred Years' War](ht
 ## Results
 
 - **12 themes:**
-  - the war's three phases: Edwardian, Brittany and the Caroline phase, Lancastrian
-  - Joan of Arc
+  - the war's three phases: Edwardian (with the scholarship its articles cite), Brittany and the Caroline phase, Lancastrian
+  - Joan of Arc and her legacy
   - the English and French monarchies
   - Burgundy and the Low Countries
-  - other Anglo-French wars
+  - Anglo-French conflicts beyond the war
   - the Middle Ages in Europe and medieval society
   - towns and regions
   - war in general
@@ -37,8 +37,10 @@ Which Wikipedia articles are most closely related to the [Hundred Years' War](ht
 |---|---|---|
 | 1. Collect and explore | [`01_collect_and_explore`](notebooks/01_collect_and_explore.ipynb) | The seed article and every article it links to, from the Wikipedia API: links (with redirects resolved), text and short descriptions. Each link is flagged if a template added it rather than the article's own text. |
 | 2. Similarity | [`02_milne_witten`](notebooks/02_milne_witten.ipynb) | Every pair of articles compared by the pages they link to (out-links, TF-IDF-style weighted cosine) and the pages that link to them (in-links from all 7.2 million English Wikipedia articles, Normalized Google Distance). The two are combined by averaging percentile ranks, because their scales differ by about 100×. |
-| 3. Clustering | [`03_clustering`](notebooks/03_clustering.ipynb) | Louvain communities on a graph joining each article to its 10 most similar articles. Evaluated by silhouette, stability (seeds, subsamples, neighborhood size) and inspection; profiled with metadata. |
-| 4. Interactive graph | [`04_graph`](notebooks/04_graph.ipynb) | Radial and force-directed layouts computed in Python, exported to a static d3 page with filters, search and a table of related articles. |
+| 3. Article types | [`03_article_types`](notebooks/03_article_types.ipynb) | A random sample of 200 articles hand-labeled by type (battle, person, place…), and a TF-IDF + logistic regression classifier on each article's text for the rest. |
+| 4. Clustering | [`04_clustering`](notebooks/04_clustering.ipynb) | Louvain communities on a graph joining each article to its 10 most similar articles. Evaluated by silhouette, stability (seeds, subsamples, neighborhood size) and inspection; profiled with metadata. |
+| 5. Interactive graph | [`05_graph`](notebooks/05_graph.ipynb) | Radial and force-directed layouts computed in Python, exported to a static d3 page with filters, search and a table of related articles. |
+| 6. Search | [`06_search`](notebooks/06_search.ipynb) | BM25 over each article's title and first paragraph, for the page's search bar. |
 
 **Tools:** Python, pandas, NumPy, SciPy (sparse matrices, hierarchical clustering), scikit-learn, NetworkX, matplotlib, d3.js, the MediaWiki API.
 

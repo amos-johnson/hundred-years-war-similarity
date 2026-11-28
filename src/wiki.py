@@ -367,6 +367,29 @@ def get_backlinks(title):
     return result
 
 
+def get_template_links(name):
+    """Articles a template (e.g. a navbox) links to, as a sorted list of titles.
+
+    `name` is given without the "Template:" prefix, e.g. "Middle Ages".
+    Cached like the other calls; templates are edited over time, so the date
+    of the first call matters.
+    """
+    path = _cache_path("templates", name)
+    if path.exists():
+        return json.loads(path.read_text())
+
+    pages, _ = _query_all({
+        "titles": f"Template:{name}",
+        "generator": "links",
+        "gplnamespace": 0,
+        "gpllimit": "max",
+        "redirects": 1,
+    })
+    result = sorted(t for t, p in pages.items() if "pageid" in p)
+    _save(path, result)
+    return result
+
+
 def get_article_count():
     """How many articles English Wikipedia has (W in Milne & Witten's in-link measure).
 
