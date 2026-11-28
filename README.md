@@ -1,10 +1,10 @@
 # Hundred Years' War: link-based similarity
 
-Which Wikipedia articles are most closely related to the [Hundred Years' War](https://en.wikipedia.org/wiki/Hundred_Years%27_War), and how do they group together? This project collects the 788 articles the war's page links to, measures how similar every pair is from their links (**Milne & Witten, 2008**), clusters them into themes and publishes the result as an interactive graph.
+Which Wikipedia articles are most closely related to the [Hundred Years' War](https://en.wikipedia.org/wiki/Hundred_Years%27_War), and how do they group together? This project collects the 788 articles the war's page links to, measures how similar every pair is from their links (**Milne & Witten, 2008**), clusters them into themes, labels each article's type, and publishes the result as an interactive graph styled like a Wikipedia page.
 
-**[▶ Open the interactive graph](https://amos-johnson.github.io/hundred-years-war-similarity/)**
+**[▶ Open the interactive graph](https://amos-johnson.github.io/hundred-years-war-similarity/)** · [One-page summary](https://amos-johnson.github.io/hundred-years-war-similarity/summary.html)
 
-[![The radial view: the war at the center, one wedge per theme, each article placed by its closeness to the war](docs/preview.png)](https://amos-johnson.github.io/hundred-years-war-similarity/)
+[![The graph page: filters on the left, an article's infobox, and the radial view with the war at the center and one wedge per theme](docs/preview.png)](https://amos-johnson.github.io/hundred-years-war-similarity/)
 
 ## Results
 
@@ -25,7 +25,8 @@ Which Wikipedia articles are most closely related to the [Hundred Years' War](ht
   - The Lancastrian phase and Joan of Arc sit closest to the war (median rank 230–260 of 788).
   - War in general and towns and regions sit farthest (640–690).
 - **Silhouette alone misleads.** Hierarchical clustering with average linkage scores a higher silhouette than Louvain (0.28 vs 0.21), yet it puts 765 of the 788 articles in one cluster. Stability and inspection were needed to choose.
-- **Navboxes leave a mark.** Templates (navboxes, sidebars) add 69% of the links between articles. One theme is 94% template-linked from the seed, while the two monarchies are 14–22%. So clusters partly follow navboxes, but most of the structure doesn't.
+- **Navboxes leave a mark.** Templates (navboxes, sidebars) add 69% of the links between articles, and 452 of the 788 articles are linked from the war's page only through templates. Three themes largely rebuild a navbox (e.g. 75 of 78 articles in *Medieval society and culture* are in the *Middle Ages* navbox), while the two monarchies are only 14–22% template-linked.
+- **Article types and themes measure different things.** A text classifier trained on 200 hand-labeled articles reaches macro-F1 0.67 (accuracy 0.77, baseline 0.18). Types and themes only partly agree (ARI 0.25): themes group by episode, types by kind of thing. Battles sit closest to the war (median rank 223), places far (649).
 - **The two halves of the measure capture different things.**
   - In-links (which pages link to both articles) find the war's core: Edward III, Charles VII, Henry V, Crécy, Agincourt.
   - Out-links (which pages both articles link to) find groups listed together, such as the war's phases.
@@ -39,7 +40,7 @@ Which Wikipedia articles are most closely related to the [Hundred Years' War](ht
 | 2. Similarity | [`02_milne_witten`](notebooks/02_milne_witten.ipynb) | Every pair of articles compared by the pages they link to (out-links, TF-IDF-style weighted cosine) and the pages that link to them (in-links from all 7.2 million English Wikipedia articles, Normalized Google Distance). The two are combined by averaging percentile ranks, because their scales differ by about 100×. |
 | 3. Article types | [`03_article_types`](notebooks/03_article_types.ipynb) | A random sample of 200 articles hand-labeled by type (battle, person, place…), and a TF-IDF + logistic regression classifier on each article's text for the rest. |
 | 4. Clustering | [`04_clustering`](notebooks/04_clustering.ipynb) | Louvain communities on a graph joining each article to its 10 most similar articles. Evaluated by silhouette, stability (seeds, subsamples, neighborhood size) and inspection; profiled with metadata. |
-| 5. Interactive graph | [`05_graph`](notebooks/05_graph.ipynb) | Radial and force-directed layouts computed in Python, exported to a static d3 page with filters, search and a table of related articles. |
+| 5. Interactive graph | [`05_graph`](notebooks/05_graph.ipynb) | Radial and force-directed layouts computed in Python, exported to a static d3 page in Wikipedia's style: filters with live counts, a stats bar for the filtered articles, an infobox for the selected article (with its lead image from Wikipedia), and a table of its most related articles. |
 | 6. Search | [`06_search`](notebooks/06_search.ipynb) | BM25 over each article's title and first paragraph, for the page's search bar. |
 
 **Tools:** Python, pandas, NumPy, SciPy (sparse matrices, hierarchical clustering), scikit-learn, NetworkX, matplotlib, d3.js, the MediaWiki API.
@@ -52,9 +53,10 @@ src/
   similarity.py    Milne–Witten measures
   clustering.py    neighbor graph, Louvain, stability
   layout.py        radial and network layouts
-notebooks/         the four steps above, with outputs
-data/processed/    Parquet tables: articles, links, pairs, seed_similarity, clusters
-docs/              the interactive page (served by GitHub Pages)
+notebooks/         the six steps above, with outputs
+data/processed/    Parquet tables: articles, links, pairs, seed_similarity, article_types, clusters
+data/labels/       hand labels and the codebook for article types
+docs/              the interactive page and the summary (served by GitHub Pages)
 ```
 
 ## Run it locally
@@ -64,9 +66,11 @@ python3 -m venv .venv
 .venv/bin/pip install -r requirements.txt
 ```
 
-- **Notebooks 03 and 04** run from the committed tables in `data/processed/`.
+- **Notebooks 03–06** run from the committed tables in `data/processed/` and the labels in `data/labels/`.
 - **Notebooks 01 and 02** call the Wikipedia API on the first run. That takes about 2 hours, mostly in-links. They cache the responses in `data/raw/`, which isn't committed.
 - **To open the graph locally,** double-click `docs/index.html`. Or, from the repo folder, run `python -m http.server -d docs` and go to http://localhost:8000.
+
+Article text and descriptions shown on the page come from Wikipedia under [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/). This project is not affiliated with the Wikimedia Foundation.
 
 ## Reference
 

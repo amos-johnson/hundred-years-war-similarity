@@ -107,9 +107,8 @@
   .tile:last-child { border-right: 0; }
   .tile .lab { display: block; color: var(--text-2); font-size: 12px; }
   .tile b { display: block; font-family: var(--serif); font-size: 21px; font-weight: 400; font-variant-numeric: tabular-nums; line-height: 1.25; }
-  .tile .all, .tile .sel { display: block; font-size: 12px; font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .tile .all { display: block; font-size: 12px; font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .tile .all { color: var(--muted); }
-  .tile .sel { color: var(--accent); }
   .stats-bar.few .tile:not(:first-child) b { color: var(--muted); }
   .stats-note { color: var(--text); font-weight: 600; font-size: 12px; margin: -6px 0 12px; }
 
@@ -557,7 +556,7 @@
   }
 
   // ---- stats bar: the filtered articles vs all articles (the selected article's own values are in the infobox) ----
-  const f2 = d3.format(".2f"), f3 = d3.format(".3f"), pct = d3.format(".0%");
+  const f3 = d3.format(".3f"), pct = d3.format(".0%");
   const STATS = [
     { label: "Articles", value: s => fmt(s.length), all: () => `of ${fmt(N)}` },
     { label: "Median rank vs the war", value: s => fmt(Math.round(d3.median(s, n => n.rank))) },
